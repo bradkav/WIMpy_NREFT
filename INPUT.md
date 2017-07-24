@@ -2,7 +2,7 @@
 
 The `WIMpy_NREFT` code allows you to calculate Dark Matter-Nucleus scattering rates in the framework of NREFT (see e.g. [arXiv:1203.3542](https://arxiv.org/abs/1203.3542)). The code is written in python and is a work in progress. It will hopefully be updated soon.
 
-The code currently supports operators $\mathcal{O}_1$ to $\mathcal{O}_11$ and contains nuclear form factor information for Xenon, Carbon, Fluorine and Iodine.
+The code currently supports operators $\mathcal{O}_1$ to $\mathcal{O}_{11}$ and contains nuclear form factor information for Xenon, Carbon, Fluorine and Iodine.
 
 For questions, comments or bug reports, please contact Bradley J Kavanagh (bradkav@gmail.com).
 

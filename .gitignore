@@ -1,1 +1,3 @@
 RenderLaTeX.sh
+*.pyc
+.ipynb_checkpoints/*
