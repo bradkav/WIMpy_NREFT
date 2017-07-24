@@ -5,19 +5,17 @@
 
 The nuclear form factors are written in the form:
 $$
-F_X^{(N, N')} = \mathrm{e}^{-2y}\sum_{k} c_k y^k\,,
+F_X^{(N, N')} = \mathrm{e}^{-2y}\sum_{k} c_k y^k\,.
 $$
-where $y = (qb/2)^2$ - definitions in e.g. Appendix A.3 of [arXiv:1203.3542](https://arxiv.org/abs/1203.3542). 
+The definition of the dimensionless momentum variable y can be found in e.g. Appendix A.3 of [arXiv:1203.3542](https://arxiv.org/abs/1203.3542). 
 
 The form factors tables give the coefficients $c_k$ from $k = 0$ to $k = 7$ on each row. For each form factor $F_X$ there are 4 rows, corresponding to:
-$$
-F_X^{(p,p)}\\
-F_X^{(p,n)}\\
-F_X^{(n,p)}\\
-F_X^{(n,n)}\,.
-$$
-The different form factors are listed in the following order (with 4 rows for each, as described above):
+$F_X^{(p,p)}\,,$
+$F_X^{(p,n)}\,,$
+$F_X^{(n,p)}\,,$
+$F_X^{(n,n)}\,.$
 
+The different form factors are listed in the following order (with 4 rows for each, as described above):
 $$
 F_M, \,\,F_{\Sigma'}, \,\, F_{\Sigma''}^{(p,p)}, \,\, F_{\Delta}, \,\, F_{\Phi''}, \,\, F_{M,\Phi''}, \,\, F_{\Sigma',\Delta}\,.
 $$
