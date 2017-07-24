@@ -10,7 +10,9 @@ For questions, comments or bug reports, please contact Bradley J Kavanagh (bradk
 
 Requires python 2.7, as well as [NumPy](http://www.numpy.org) and [SciPy](https://www.scipy.org).
 
-To get started, check out the [`NREFT_example.ipynb`](NREFT_example.ipynb), which contains examples of how to use the different parts of the code. More detailed documentation should be coming soon...
+To get started, check out the [`NREFT_example.ipynb`](NREFT_example.ipynb), which contains examples of how to use the different parts of the code. The same code is also available as a pure python script in `NREFT_example.py`.
+
+More detailed documentation should be coming soon...
 
 
 ### Notes + Caveats
