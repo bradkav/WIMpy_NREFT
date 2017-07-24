@@ -7,6 +7,7 @@ The nuclear form factors are written in the form:
 $$
 F_X^{(N, N')} = \mathrm{e}^{-2y}\sum_{k} c_k y^k\,.
 $$
+
 The definition of the dimensionless momentum variable y can be found in e.g. Appendix A.3 of [arXiv:1203.3542](https://arxiv.org/abs/1203.3542).
 
 The form factors tables give the coefficients $c_k$ from $k = 0$ to $k = 7$ on each row. For each form factor $F_X$ there are 4 rows, corresponding to:
