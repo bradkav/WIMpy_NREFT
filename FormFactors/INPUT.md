@@ -36,4 +36,6 @@ Note that the $W$ functions of arXiv:1501.03729 (and others) are related to the 
 $$
 F_X^{(N,N')} = \frac{4\pi}{2 J + 1} W_X^{(N, N')}\,,
 $$
-where J is the nuclear spin. Check out Eq. 76 of arXiv:1203.3542 for how to convert between the nucleon $(N, N')$ and isospin $(\tau, \tau')$ bases.
+where J is the nuclear spin. 
+
+Check out Eq. 76 of arXiv:1203.3542 for how to convert between the nucleon $(N, N')$ and isospin $(\tau, \tau')$ bases.
