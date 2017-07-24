@@ -18,5 +18,5 @@ To get started, check out the [`NREFT_example.ipynb`](NREFT_example.ipynb), whic
 The code is still a work in progress, so be aware of the following:
 
 - The code assumes a spin-1/2 DM particle.
-- The code can only be used for NREFT operators up to <img src="https://rawgit.com/bradkav/WIMpy_NREFT/master/svgs/83b06de0f54a8bddc8dcd54cbaba9795.svg?invert_in_darkmode" align=middle width=28.600935pt height=22.38192pt/>.
+- The code can only be used for NREFT operators up to <img src="https://rawgit.com/bradkav/WIMpy_NREFT/master/svgs/917244ca615745a80feccbe760feb728.svg?invert_in_darkmode" align=middle width=26.09409pt height=22.38192pt/>.
 - The code is *not* optimised for speed.

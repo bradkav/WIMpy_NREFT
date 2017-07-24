@@ -18,5 +18,5 @@ To get started, check out the [`NREFT_example.ipynb`](NREFT_example.ipynb), whic
 The code is still a work in progress, so be aware of the following:
 
 - The code assumes a spin-1/2 DM particle.
-- The code can only be used for NREFT operators up to $\mathcal{O}_11$.
+- The code can only be used for NREFT operators up to $\mathcal{O}_{11}$.
 - The code is *not* optimised for speed.
