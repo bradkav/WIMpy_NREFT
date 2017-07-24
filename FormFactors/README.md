@@ -26,3 +26,8 @@ Note that the form factor <img src="https://rawgit.com/bradkav/WIMpy_NREFT/maste
 ### References
 
 NREFT form factors for Xe, F and I are taken from [arXiv:1203.3542](https://arxiv.org/abs/1203.3542). The form factor for C is taken from [arXiv:1501.03729](https://arxiv.org/abs/1501.03729).
+
+Note that the <img src="https://rawgit.com/bradkav/WIMpy_NREFT/master/svgs/84c95f91a742c9ceb460a83f9b5090bf.svg?invert_in_darkmode" align=middle width=17.74179pt height=22.38192pt/> functions of arXiv:1501.03729 (and others) are related to the form factors <img src="https://rawgit.com/bradkav/WIMpy_NREFT/master/svgs/b8bc815b5e9d5177af01fd4d3d3c2f10.svg?invert_in_darkmode" align=middle width=12.80598pt height=22.38192pt/> by:
+
+<p align="center"><img src="https://rawgit.com/bradkav/WIMpy_NREFT/master/svgs/78a41e343701df081ecdbd0ef00e4c0b.svg?invert_in_darkmode" align=middle width=194.95575pt height=34.31538pt/></p>
+where J is the nuclear spin. Check out Eq. 76 of arXiv:1203.3542 for how to convert between the nucleon <img src="https://rawgit.com/bradkav/WIMpy_NREFT/master/svgs/1748711522507025e0f09120e8bd4dd2.svg?invert_in_darkmode" align=middle width=53.626485pt height=24.66849pt/> and isospin <img src="https://rawgit.com/bradkav/WIMpy_NREFT/master/svgs/0a06d517787e682c533d984ce8036565.svg?invert_in_darkmode" align=middle width=41.76513pt height=24.66849pt/> bases.

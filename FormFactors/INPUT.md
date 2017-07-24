@@ -30,3 +30,10 @@ Note that the form factor $F_{\tilde{\Phi}'}$ is not (yet) included, and therefo
 ### References
 
 NREFT form factors for Xe, F and I are taken from [arXiv:1203.3542](https://arxiv.org/abs/1203.3542). The form factor for C is taken from [arXiv:1501.03729](https://arxiv.org/abs/1501.03729).
+
+Note that the $W$ functions of arXiv:1501.03729 (and others) are related to the form factors $F$ by:
+
+$$
+F_X^{(N,N')} = \frac{4\pi}{2 J + 1} W_X^{(N, N')}\,,
+$$
+where J is the nuclear spin. Check out Eq. 76 of arXiv:1203.3542 for how to convert between the nucleon $(N, N')$ and isospin $(\tau, \tau')$ bases.
