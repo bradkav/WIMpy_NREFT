@@ -191,7 +191,7 @@ def dRdE_standard(E, N_p, N_n, mx, sig):
 def Nevents_standard(E_min, E_max, N_p, N_n, mx, sig, eff=None):
     if (eff == None):
         integ = lambda x: dRdE_standard(x, N_p, N_n, mx, sig)
-        print " No efficiency!"
+        print(" No efficiency!")
     else:
         integ = lambda x: eff(x)*dRdE_standard(x, N_p, N_n, mx, sig)
     return quad(integ, E_min, E_max)[0]
@@ -327,7 +327,7 @@ def Nevents_NREFT(E_min, E_max, m_A, mx, cp_list, cn_list, FFcoeffs, eff=None):
 #---------------------------------------------------------
 # Code for loading in the FormFactor coefficients
 def LoadFormFactors(root, A, Z):
-    print " Loading Form Factor for (A, Z) = (" + str(int(A)) + ", " + str(int(Z)) + ")..."
+    print(" Loading Form Factor for (A, Z) = (" + str(int(A)) + ", " + str(int(Z)) + ")...")
     return np.loadtxt(root +'/FormFactors_Z='\
                  + str(int(Z)) + '_A=' + str(int(A)) +'.dat')
 
