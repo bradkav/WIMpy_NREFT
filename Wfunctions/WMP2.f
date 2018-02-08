@@ -1,4 +1,4 @@
-      subroutine CalcWMP2(i,j,y)
+      subroutine CalcWMP2(i,j,y,target,WMP2)
       implicit none
       real y,WMP2
       integer i,j

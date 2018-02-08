@@ -1,4 +1,4 @@
-      subroutine CalcWM(i,j,y)
+      subroutine CalcWM(i,j,y,target,WM)
       implicit none
       real y,WM
       integer i,j

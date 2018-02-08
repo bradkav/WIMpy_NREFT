@@ -1,4 +1,4 @@
-      subroutine CalcWS2(i,j,y)
+      subroutine CalcWS2(i,j,y,target,WS2)
       implicit none
       real y,WS2
       integer i,j

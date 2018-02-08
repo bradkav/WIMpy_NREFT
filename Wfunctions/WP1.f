@@ -1,4 +1,4 @@
-      subroutine CalcWP1(i,j,y)
+      subroutine CalcWP1(i,j,y,target,WP1)
       implicit none
       real y,WP1
       integer i,j
