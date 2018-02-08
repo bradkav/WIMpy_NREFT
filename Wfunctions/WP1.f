@@ -1,8 +1,10 @@
-      function WP1(i,j,y)
+      subroutine CalcWP1(i,j,y)
       implicit none
       real y,WP1
       integer i,j
-      include 'dsddcom.h'
+      character(15) target
+
+cf2py intent(out) WP1
 c
       if (target.eq."Ni59") then
          if ((i.eq.0).and.(j.eq.0)) then
@@ -333,5 +335,4 @@ ccc...
        end if  
       end if
 
-      return
       end

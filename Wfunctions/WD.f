@@ -2,7 +2,7 @@
       implicit none
       real y,WD
       integer i,j
-	  character(15) target
+      character(15) target
 	  
 cf2py intent(out) WD
 c

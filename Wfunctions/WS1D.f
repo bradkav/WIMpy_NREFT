@@ -1,8 +1,10 @@
-      function WS1D(i,j,y)
+      subroutine CalcWS1D(i,j,y)
       implicit none
       real y,WS1D
       integer i,j
-      include 'dsddcom.h'
+      character(15) target
+
+cf2py intent(out) WS1D
 c
       if (target.eq."Ni59") then
          if ((i.eq.0).and.(j.eq.0)) then
@@ -436,7 +438,6 @@ ccc...
        end if  
       end if
 
-      return
       end
       
 

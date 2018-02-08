@@ -1,8 +1,10 @@
-      function WP2(i,j,y)
+      subroutine CalcWP2(i,j,y)
       implicit none
       real y,WP2
       integer i,j
-      include 'dsddcom.h'
+      character(15) target
+
+cf2py intent(out) WP2
 c
       if (target.eq."Ni59") then
          if ((i.eq.0).and.(j.eq.0)) then
@@ -505,6 +507,5 @@ ccc...
      &        - 0.0013746385028403025*y**2)/exp(2.*y)
         end if
       end if  
-      return
       end
       
