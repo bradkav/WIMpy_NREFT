@@ -146,14 +146,76 @@ def calcWM(y, target="Xe131", cp=1, cn=1):
     c = np.array([0.5*(cp + cn), 0.5*(cp - cn)])
     tau1 = np.array([0.,1.])
     tau2 = np.array([0.,1.])
-    WMvals = []
+    WMval = []
     for i in range(0,2):
         for j in range(0,2):
-            WMvals.append(c[i]*c[j]*WM.calcwm(tau1[i], tau2[j], y, target))
+            WMval.append(c[i]*c[j]*WM.calcwm(tau1[i], tau2[j], y, target))
     return sum(WMvals)
+#--------------------------------------------------------
+def calcWMP2(y, target="Xe131", cp=1, cn=1):
+    c = np.array([0.5*(cp + cn), 0.5*(cp - cn)])
+    tau1 = np.array([0.,1.])
+    tau2 = np.array([0.,1.])
+    WMP2val = []
+    for i in range(0,2):
+        for j in range(0,2):
+            WMP2val.append(c[i]*c[j]*WMP2.calcwmp2(tau1[i], tau2[j], y, target))
+    return sum(WMP2val)
 
-# WM.calcwm(0.1,0.1,1.0,'Xe131')
-# SUM( c_tau1*c_tau2*calcWM(tau1, tau2, y), {tau1 = 0, 1}, {tau2 = 0, 1})
+#--------------------------------------------------------
+def calcWP1(y, target="Xe131", cp=1, cn=1):
+    c = np.array([0.5*(cp + cn), 0.5*(cp - cn)])
+    tau1 = np.array([0.,1.])
+    tau2 = np.array([0.,1.])
+    WP1val = []
+    for i in range(0,2):
+        for j in range(0,2):
+            WP1val.append(c[i]*c[j]*WP1.calcwp1(tau1[i], tau2[j], y, target))
+    return sum(WP1val)
+
+#--------------------------------------------------------
+def calcWP2(y, target="Xe131", cp=1, cn=1):
+    c = np.array([0.5*(cp + cn), 0.5*(cp - cn)])
+    tau1 = np.array([0.,1.])
+    tau2 = np.array([0.,1.])
+    WP2val = []
+    for i in range(0,2):
+        for j in range(0,2):
+            WP2val.append(c[i]*c[j]*WP2.calcwp2(tau1[i], tau2[j], y, target))
+    return sum(WP2val)
+
+#--------------------------------------------------------
+def calcWS1(y, target="Xe131", cp=1, cn=1):
+    c = np.array([0.5*(cp + cn), 0.5*(cp - cn)])
+    tau1 = np.array([0.,1.])
+    tau2 = np.array([0.,1.])
+    WS1val = []
+    for i in range(0,2):
+        for j in range(0,2):
+            WS1val.append(c[i]*c[j]*WS1.calcws1(tau1[i], tau2[j], y, target))
+    return sum(WS1)
+
+#--------------------------------------------------------
+def calcWS1D(y, target="Xe131", cp=1, cn=1):
+    c = np.array([0.5*(cp + cn), 0.5*(cp - cn)])
+    tau1 = np.array([0.,1.])
+    tau2 = np.array([0.,1.])
+    WS1Dval = []
+    for i in range(0,2):
+        for j in range(0,2):
+            WS1Dval.append(c[i]*c[j]*WS1D.calcws1d(tau1[i], tau2[j], y, target))
+    return sum(WS1Dval)
+
+#--------------------------------------------------------
+def calcWS2(y, target="Xe131", cp=1, cn=1):
+    c = np.array([0.5*(cp + cn), 0.5*(cp - cn)])
+    tau1 = np.array([0.,1.])
+    tau2 = np.array([0.,1.])
+    WS2val = []
+    for i in range(0,2):
+        for j in range(0,2):
+            WS2val.append(c[i]*c[j]*WS2.calcws2(tau1[i], tau2[j], y, target))
+    return sum(WS2val)
 
 # Select the appropriate form factor from the list
 #--------------------------------------------------------
