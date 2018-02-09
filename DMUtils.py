@@ -13,6 +13,7 @@ from scipy.integrate import trapz, cumtrapz, quad
 from scipy.interpolate import interp1d
 from numpy.random import rand
 from scipy.special import sph_jn, erf
+import WD, WM, WMP2, WP1, WP2, WS1, WS2, WS1D
 
 #----------------------------------------------------
 #---- Velocity Integrals (and helper functions) -----
@@ -138,8 +139,22 @@ def calcNREFTFormFactor(E,m_A,index,cp,cn, FFcoeffs):
     Fnp = np.polyval(vnp[::-1],y)
     Fpn = np.polyval(vpn[::-1],y)
     return (cn*cn*Fnn + cp*cp*Fpp + cn*cp*Fpn + cp*cn*Fnp)*np.exp(-2*y)
-    
-    
+
+# Replacement Fortran functions
+#--------------------------------------------------------
+def calcWM(y, target="Xe131", cp=1, cn=1):
+    c = np.array([0.5*(cp + cn), 0.5*(cp - cn)])
+    tau1 = np.array([0.,1.])
+    tau2 = np.array([0.,1.])
+    WMvals = []
+    for i in range(0,2):
+        for j in range(0,2):
+            WMvals.append(c[i]*c[j]*WM.calcwm(tau1[i], tau2[j], y, target))
+    return sum(WMvals)
+
+# WM.calcwm(0.1,0.1,1.0,'Xe131')
+# SUM( c_tau1*c_tau2*calcWM(tau1, tau2, y), {tau1 = 0, 1}, {tau2 = 0, 1})
+
 # Select the appropriate form factor from the list
 #--------------------------------------------------------
 def calcFF_M(E, m_A, FFcoeffs, cp=1, cn=1):
