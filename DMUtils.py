@@ -142,6 +142,17 @@ def calcNREFTFormFactor(E,m_A,index,cp,cn, FFcoeffs):
 
 # Replacement Fortran functions
 #--------------------------------------------------------
+def calcWD(y, target="Xe131", cp=1, cn=1):
+    c = np.array([0.5*(cp + cn), 0.5*(cp - cn)])
+    tau1 = np.array([0.,1.])
+    tau2 = np.array([0.,1.])
+    WDval = []
+    for i in range(0,2):
+        for j in range(0,2):
+            WDval.append(c[i]*c[j]*WD.calcwm(tau1[i], tau2[j], y, target))
+    return sum(WDval)
+
+#--------------------------------------------------------
 def calcWM(y, target="Xe131", cp=1, cn=1):
     c = np.array([0.5*(cp + cn), 0.5*(cp - cn)])
     tau1 = np.array([0.,1.])
@@ -150,7 +161,8 @@ def calcWM(y, target="Xe131", cp=1, cn=1):
     for i in range(0,2):
         for j in range(0,2):
             WMval.append(c[i]*c[j]*WM.calcwm(tau1[i], tau2[j], y, target))
-    return sum(WMvals)
+    return sum(WMval)
+
 #--------------------------------------------------------
 def calcWMP2(y, target="Xe131", cp=1, cn=1):
     c = np.array([0.5*(cp + cn), 0.5*(cp - cn)])
@@ -277,92 +289,97 @@ def Nevents_standard(E_min, E_max, N_p, N_n, mx, sig, eff=None):
 # Differential recoil rate in NREFT framework
 # Calculates the contribution from the interference of operators
 # i and j (with couplings cp and cn to protons and neutrons)
-def dRdE_NREFT_components(E, m_A, m_x, cp, cn, i, j, FFcoeffs):
+def dRdE_NREFT_components(E, m_A, m_x, cp, cn, i, j, target):
     eta = calcEta(vmin(E, m_A, m_x))
     meta = calcMEta(vmin(E, m_A, m_x))
     amu = 931.5*1000
     q1 = np.sqrt(2*m_A*amu*E)
     qr = q1/amu
-     
-     
+    # Required for form factors
+    q2 = q1*(1e-12/1.97e-7)
+    b = np.sqrt(41.467/(45*m_A**(-1.0/3.0) - 25*m_A**(-2.0/3.0)))
+    y = (q2*b/2)**2
+        
+        
     #Calculate all the form factors, for ease of typing!
-    FF_M = lambda x: calcFF_M(x, m_A, FFcoeffs, cp, cn)
-    FF_Sigma1 = lambda x: calcFF_Sigma1(x, m_A, FFcoeffs, cp, cn)
-    FF_Sigma2 = lambda x: calcFF_Sigma2(x, m_A, FFcoeffs, cp, cn)
-    FF_Delta = lambda x: calcFF_Delta(x, m_A, FFcoeffs, cp, cn)
-    FF_Phi2 = lambda x: calcFF_Phi2(x, m_A, FFcoeffs, cp, cn)
-    FF_MPhi2 = lambda x: calcFF_MPhi2(x, m_A, FFcoeffs, cp, cn)
-    FF_Sigma1Delta = lambda x: calcFF_Sigma1Delta(x, m_A, FFcoeffs, cp, cn)
-    
+    FF_M = lambda x: calcWM(x, target=target, cp=cp, cn=cn)
+    FF_Sigma1 = lambda x: calcWS1(x, target=target, cp=cp, cn=cn)
+    FF_Sigma2 = lambda x: calcWS2(x, target=target, cp=cp, cn=cn)
+    FF_Delta = lambda x: calcWD(x, target=target, cp=cp, cn=cn)
+    FF_Phi1 = lambda x: calcWP1(x, target=target, cp=cp, cn=cn)
+    FF_Phi2 = lambda x: calcWP2(x, target=target, cp=cp, cn=cn)
+    FF_MPhi2 = lambda x: calcWMP2(x, target=target, cp=cp, cn=cn)
+    FF_Sigma1Delta = lambda x: calcWS1D(x, target=target, cp=cp, cn=cn)
+
     #FF_SD = lambda x: calcFF_SD(x, m_A, FFcoeffs, cp, cn)
 
     rate = 0.0
 
     #Non-interference terms!
     if (i == j):
-     #Contact interactions
- 
+        #Contact interactions
+
         if (i == 1): #STANDARD SPIN-INDEPENDENT
-            rate = eta*FF_M(E)
+            rate = eta*FF_M(y)
         if (i == 2):
             rate = 0
         if (i == 3):
-            A = meta*FF_Sigma1(E)
-            B = 0.25*(qr**2)*eta*FF_Phi2(E)
+            A = meta*FF_Sigma1(y)
+            B = 0.25*(qr**2)*eta*FF_Phi2(y)
             rate = (qr**2)*(A+B)
         if (i == 4): #STANDARD SPIN-DEPENDENT
-            rate = eta*(1.0/16.0)*(FF_Sigma1(E) + FF_Sigma2(E))
+            rate = eta*(1.0/16.0)*(FF_Sigma1(y) + FF_Sigma2(y))
             #rate = (1.0/16.0)*eta*FF_SD(E)*(1.0/4.0)
         if (i == 5):
-            A = meta*FF_M(E)
-            B = eta*(qr**2)*FF_Delta(E)
+            A = meta*FF_M(y)
+            B = eta*(qr**2)*FF_Delta(y)
             rate = 0.25*(qr**2)*(A+B)
         if (i == 6):
-            rate = (1.0/16.0)*(qr**4)*eta*FF_Sigma2(E)
+            rate = (1.0/16.0)*(qr**4)*eta*FF_Sigma2(y)
         if (i == 7):
-            rate =  meta*FF_Sigma1(E)
+            rate =  meta*FF_Sigma1(y)
         if (i == 8):
-            A = meta*FF_M(E)
-            B = eta*(qr**2)*FF_Delta(E)
+            A = meta*FF_M(y)
+            B = eta*(qr**2)*FF_Delta(y)
             rate =  0.25*(A+B)
         if (i == 9):
-            rate =  (1.0/16.0)*eta*(qr**2)*FF_Sigma1(E)
+            rate =  (1.0/16.0)*eta*(qr**2)*FF_Sigma1(y)
         if (i == 10):
-            rate =  0.25*eta*(qr**2)*FF_Sigma2(E)
+            rate =  0.25*eta*(qr**2)*FF_Sigma2(y)
         if (i == 11):
-            rate =  0.25*eta*(qr**2)*FF_M(E)
+            rate =  0.25*eta*(qr**2)*FF_M(y)
 
         #Long-range interactions
         if (i == 101):
-            rate =  (qr**-4)*eta*FF_M(E)
+            rate =  (qr**-4)*eta*FF_M(y)
         if (i == 104):
             #rate =  (qr**-4)*(1.0/16.0)*eta*FF_SD(E)
             rate = 0    #ZERO BY DEFINITION!
         if (i == 105):
-            A = meta*FF_M(E)
-            B = eta*(qr**2)*FF_Delta(E)
+            A = meta*FF_M(y)
+            B = eta*(qr**2)*FF_Delta(y)
             rate =  0.25*(qr**-2.0)*(A+B)
         if (i == 106):
-            rate =  (1.0/16.0)*eta*FF_Sigma2(E)
+            rate =  (1.0/16.0)*eta*FF_Sigma2(y)
         if (i == 111):
-            rate =  0.25*eta*(qr**-2)*FF_M(E)
+            rate =  0.25*eta*(qr**-2)*FF_M(y)
 
     #Interference terms
     else:
         if ((i == 1 and j == 3) or (i == 3 and j == 1)):
-            rate = (1.0/2.0)*(qr**2)*eta*FF_MPhi2(E)
+            rate = (1.0/2.0)*(qr**2)*eta*FF_MPhi2(y)
         if ((i == 4 and j == 5) or (i == 5 and j == 4)):
-            rate = -(1.0/8.0)*(qr**2)*eta*FF_Sigma1Delta(E)
+            rate = -(1.0/8.0)*(qr**2)*eta*FF_Sigma1Delta(y)
         if ((i == 4 and j == 6) or (i == 6 and j == 4)):
-            rate = (1.0/16.0)*(qr**2)*eta*FF_Sigma2(E)
+            rate = (1.0/16.0)*(qr**2)*eta*FF_Sigma2(y)
         if ((i == 8 and j == 9) or (i == 9 and j ==8)):
-            rate =  (1.0/8.0)*(qr**2)*eta*FF_Sigma1Delta(E)
+            rate =  (1.0/8.0)*(qr**2)*eta*FF_Sigma1Delta(y)
         if ((i == 104 and j == 105) or (i == 105 and j == 104)):
-            rate =  -(1.0/8.0)*eta*FF_Sigma1Delta(E)
+            rate =  -(1.0/8.0)*eta*FF_Sigma1Delta(y)
         if ((i == 104) and (j == 106) or (i == 106 and j == 104)):
-            rate =  (1.0/16.0)*eta*FF_Sigma2(E)
-     
-    
+            rate =  (1.0/16.0)*eta*FF_Sigma2(y)
+        
+
     conv =  (1.98e-14*1.0/(m_x+amu))**2/(16.0*pi)
 
     # We need to do this, because the polynomial form factors
@@ -371,21 +388,126 @@ def dRdE_NREFT_components(E, m_A, m_x, cp, cn, i, j, FFcoeffs):
         return 0.0
     else:
         return rate*rate_prefactor(m_x)*conv
+
+# def dRdE_NREFT_components(E, m_A, m_x, cp, cn, i, j, FFcoeffs):
+#     eta = calcEta(vmin(E, m_A, m_x))
+#     meta = calcMEta(vmin(E, m_A, m_x))
+#     amu = 931.5*1000
+#     q1 = np.sqrt(2*m_A*amu*E)
+#     qr = q1/amu
+     
+     
+#     #Calculate all the form factors, for ease of typing!
+#     FF_M = lambda x: calcFF_M(x, m_A, FFcoeffs, cp, cn)
+#     FF_Sigma1 = lambda x: calcFF_Sigma1(x, m_A, FFcoeffs, cp, cn)
+#     FF_Sigma2 = lambda x: calcFF_Sigma2(x, m_A, FFcoeffs, cp, cn)
+#     FF_Delta = lambda x: calcFF_Delta(x, m_A, FFcoeffs, cp, cn)
+#     FF_Phi2 = lambda x: calcFF_Phi2(x, m_A, FFcoeffs, cp, cn)
+#     FF_MPhi2 = lambda x: calcFF_MPhi2(x, m_A, FFcoeffs, cp, cn)
+#     FF_Sigma1Delta = lambda x: calcFF_Sigma1Delta(x, m_A, FFcoeffs, cp, cn)
     
+#     #FF_SD = lambda x: calcFF_SD(x, m_A, FFcoeffs, cp, cn)
+
+#     rate = 0.0
+
+#     #Non-interference terms!
+#     if (i == j):
+#      #Contact interactions
+ 
+#         if (i == 1): #STANDARD SPIN-INDEPENDENT
+#             rate = eta*FF_M(E)
+#         if (i == 2):
+#             rate = 0
+#         if (i == 3):
+#             A = meta*FF_Sigma1(E)
+#             B = 0.25*(qr**2)*eta*FF_Phi2(E)
+#             rate = (qr**2)*(A+B)
+#         if (i == 4): #STANDARD SPIN-DEPENDENT
+#             rate = eta*(1.0/16.0)*(FF_Sigma1(E) + FF_Sigma2(E))
+#             #rate = (1.0/16.0)*eta*FF_SD(E)*(1.0/4.0)
+#         if (i == 5):
+#             A = meta*FF_M(E)
+#             B = eta*(qr**2)*FF_Delta(E)
+#             rate = 0.25*(qr**2)*(A+B)
+#         if (i == 6):
+#             rate = (1.0/16.0)*(qr**4)*eta*FF_Sigma2(E)
+#         if (i == 7):
+#             rate =  meta*FF_Sigma1(E)
+#         if (i == 8):
+#             A = meta*FF_M(E)
+#             B = eta*(qr**2)*FF_Delta(E)
+#             rate =  0.25*(A+B)
+#         if (i == 9):
+#             rate =  (1.0/16.0)*eta*(qr**2)*FF_Sigma1(E)
+#         if (i == 10):
+#             rate =  0.25*eta*(qr**2)*FF_Sigma2(E)
+#         if (i == 11):
+#             rate =  0.25*eta*(qr**2)*FF_M(E)
+
+#         #Long-range interactions
+#         if (i == 101):
+#             rate =  (qr**-4)*eta*FF_M(E)
+#         if (i == 104):
+#             #rate =  (qr**-4)*(1.0/16.0)*eta*FF_SD(E)
+#             rate = 0    #ZERO BY DEFINITION!
+#         if (i == 105):
+#             A = meta*FF_M(E)
+#             B = eta*(qr**2)*FF_Delta(E)
+#             rate =  0.25*(qr**-2.0)*(A+B)
+#         if (i == 106):
+#             rate =  (1.0/16.0)*eta*FF_Sigma2(E)
+#         if (i == 111):
+#             rate =  0.25*eta*(qr**-2)*FF_M(E)
+
+#     #Interference terms
+#     else:
+#         if ((i == 1 and j == 3) or (i == 3 and j == 1)):
+#             rate = (1.0/2.0)*(qr**2)*eta*FF_MPhi2(E)
+#         if ((i == 4 and j == 5) or (i == 5 and j == 4)):
+#             rate = -(1.0/8.0)*(qr**2)*eta*FF_Sigma1Delta(E)
+#         if ((i == 4 and j == 6) or (i == 6 and j == 4)):
+#             rate = (1.0/16.0)*(qr**2)*eta*FF_Sigma2(E)
+#         if ((i == 8 and j == 9) or (i == 9 and j ==8)):
+#             rate =  (1.0/8.0)*(qr**2)*eta*FF_Sigma1Delta(E)
+#         if ((i == 104 and j == 105) or (i == 105 and j == 104)):
+#             rate =  -(1.0/8.0)*eta*FF_Sigma1Delta(E)
+#         if ((i == 104) and (j == 106) or (i == 106 and j == 104)):
+#             rate =  (1.0/16.0)*eta*FF_Sigma2(E)
+     
+    
+#     conv =  (1.98e-14*1.0/(m_x+amu))**2/(16.0*pi)
+
+#     # We need to do this, because the polynomial form factors
+#     # aren't valid up to arbitrarily high momenta...
+#     if (rate < 0):
+#         return 0.0
+#     else:
+#         return rate*rate_prefactor(m_x)*conv
+
 #--------------------------------------------------------
 # Calculate differential rate in NREFT from two vectors of couplings:
 # cp_list and cn_list should be the (dimensional) couplings of the DM
 # to protons and neutrons for operators 1-11. That is, cp_list should
 # be a vector with 11 elements.
-def dRdE_NREFT(E, m_A, m_x, cp_list, cn_list, FFcoeffs):
+# New version with Form Factors
+def dRdE_NREFT(E, m_A, m_x, cp, cn, i, j, target):
     #Sum over all the contributions from different operators
     dRdE_tot = 0.0
     for i in range(11):
         for j in range(11):
-            dRdE_tot += dRdE_NREFT_components(E, m_A, m_x, cp_list[i], cn_list[j], i+1, j+1, FFcoeffs)
-    
+            dRdE_tot += dRdE_NREFT_components(E, m_A, m_x, cp_list[i], cn_list[j], i+1, j+1, target)
     
     return dRdE_tot
+
+# def dRdE_NREFT(E, m_A, m_x, cp_list, cn_list, FFcoeffs):
+#     #Sum over all the contributions from different operators
+#     dRdE_tot = 0.0
+#     for i in range(11):
+#         for j in range(11):
+#             dRdE_tot += dRdE_NREFT_components(E, m_A, m_x, cp_list[i], cn_list[j], i+1, j+1, FFcoeffs)
+    
+    
+#     return dRdE_tot
 
 #--------------------------------------------------------
 # Number of events in NREFT
