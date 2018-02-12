@@ -6,6 +6,7 @@
 
 cf2py intent(out) WM
 c
+
       if (target.eq."Ni59") then
          if ((i.eq.0).and.(j.eq.0)) then
             WM = (277.009129983598 - 732.4308479753286*y 
