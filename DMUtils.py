@@ -12,7 +12,8 @@ from numpy import pi, cos, sin
 from scipy.integrate import trapz, cumtrapz, quad
 from scipy.interpolate import interp1d
 from numpy.random import rand
-from scipy.special import sph_jn, erf
+from scipy.special import erf
+# from scipy.special import spherical_jn
 from Wfunctions import WD, WM, WMP2, WP1, WP2, WS1, WS2, WS1D
 
 #----------------------------------------------------
