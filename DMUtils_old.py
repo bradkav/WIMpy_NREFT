@@ -12,8 +12,7 @@ from numpy import pi, cos, sin
 from scipy.integrate import trapz, cumtrapz, quad
 from scipy.interpolate import interp1d
 from numpy.random import rand
-from scipy.special import erf
-# from scipy.special import spherical_jn
+from scipy.special import sph_jn, erf
 from Wfunctions import WD, WM, WMP2, WP1, WP2, WS1, WS2, WS1D
 
 #----------------------------------------------------
@@ -35,8 +34,8 @@ def calcEta(vmin, vlag=230.0, sigmav=156.0,vesc=544.0):
     vel_integral = (0.5/vlag)*(erf(aplus) - erf(aminus))
     vel_integral -= (1.0/(np.sqrt(np.pi)*vlag))*(aplus - aminus)*np.exp(-0.5*(vesc/sigmav)**2)
     
-    vel_integral = np.clip(vel_integral, 0, 1e30)
-
+    if (vel_integral < 0):
+        return 0
     
     return 2*np.pi*N*vel_integral
     
@@ -391,32 +390,23 @@ def dRdE_NREFT_components(E, m_A, m_x, cp, cn, i, j, target, eta, meta, q1):
     else:
         return rate
 
-#--------------------------------------------------------
-# Differential recoil rate in NREFT framework
-# Calculates the contribution from the interference of operators
-# i and j (with couplings cp and cn to protons and neutrons)
-def dRdE_NREFT_sum(E, m_A, m_x, cp, cn, i, j, target, eta, meta, q1):
-    #eta = calcEta(vmin(E, m_A, m_x))
-    #meta = calcMEta(vmin(E, m_A, m_x))
+
+def dRdE_NREFT_components_old(E, m_A, m_x, cp, cn, i, j, FFcoeffs):
+    eta = calcEta(vmin(E, m_A, m_x))
+    meta = calcMEta(vmin(E, m_A, m_x))
     amu = 931.5*1000
-    #q1 = np.sqrt(2*m_A*amu*E)
+    q1 = np.sqrt(2*m_A*amu*E)
     qr = q1/amu
-    
-    # Required for form factors
-    q2 = q1*(1e-12/1.97e-7)
-    b = np.sqrt(41.467/(45*m_A**(-1.0/3.0) - 25*m_A**(-2.0/3.0)))
-    y = (q2*b/2)**2
-        
-        
+
+
     #Calculate all the form factors, for ease of typing!
-    FF_M = lambda x: calcWM(x, target=target, cp=cp, cn=cn)
-    FF_Sigma1 = lambda x: calcWS1(x, target=target, cp=cp, cn=cn)
-    FF_Sigma2 = lambda x: calcWS2(x, target=target, cp=cp, cn=cn)
-    FF_Delta = lambda x: calcWD(x, target=target, cp=cp, cn=cn)
-    FF_Phi1 = lambda x: calcWP1(x, target=target, cp=cp, cn=cn)
-    FF_Phi2 = lambda x: calcWP2(x, target=target, cp=cp, cn=cn)
-    FF_MPhi2 = lambda x: calcWMP2(x, target=target, cp=cp, cn=cn)
-    FF_Sigma1Delta = lambda x: calcWS1D(x, target=target, cp=cp, cn=cn)
+    FF_M = lambda x: calcFF_M(x, m_A, FFcoeffs, cp, cn)
+    FF_Sigma1 = lambda x: calcFF_Sigma1(x, m_A, FFcoeffs, cp, cn)
+    FF_Sigma2 = lambda x: calcFF_Sigma2(x, m_A, FFcoeffs, cp, cn)
+    FF_Delta = lambda x: calcFF_Delta(x, m_A, FFcoeffs, cp, cn)
+    FF_Phi2 = lambda x: calcFF_Phi2(x, m_A, FFcoeffs, cp, cn)
+    FF_MPhi2 = lambda x: calcFF_MPhi2(x, m_A, FFcoeffs, cp, cn)
+    FF_Sigma1Delta = lambda x: calcFF_Sigma1Delta(x, m_A, FFcoeffs, cp, cn)
 
     #FF_SD = lambda x: calcFF_SD(x, m_A, FFcoeffs, cp, cn)
 
@@ -424,93 +414,120 @@ def dRdE_NREFT_sum(E, m_A, m_x, cp, cn, i, j, target, eta, meta, q1):
 
     #Non-interference terms!
     if (i == j):
-        #Contact interactions
+     #Contact interactions
 
         if (i == 1): #STANDARD SPIN-INDEPENDENT
-            rate = eta*FF_M(y)
-        elif (i == 2):
+            rate = eta*FF_M(E)
+        if (i == 2):
             rate = 0
-        elif (i == 3):
-            A = meta*FF_Sigma1(y)
-            B = 0.25*(qr**2)*eta*FF_Phi2(y)
+        if (i == 3):
+            A = meta*FF_Sigma1(E)
+            B = 0.25*(qr**2)*eta*FF_Phi2(E)
             rate = (qr**2)*(A+B)
-        elif (i == 4): #STANDARD SPIN-DEPENDENT
-            rate = eta*(1.0/16.0)*(FF_Sigma1(y) + FF_Sigma2(y))
+        if (i == 4): #STANDARD SPIN-DEPENDENT
+            rate = eta*(1.0/16.0)*(FF_Sigma1(E) + FF_Sigma2(E))
             #rate = (1.0/16.0)*eta*FF_SD(E)*(1.0/4.0)
-        elif (i == 5):
-            A = meta*FF_M(y)
-            B = eta*(qr**2)*FF_Delta(y)
+        if (i == 5):
+            A = meta*FF_M(E)
+            B = eta*(qr**2)*FF_Delta(E)
             rate = 0.25*(qr**2)*(A+B)
-        elif (i == 6):
-            rate = (1.0/16.0)*(qr**4)*eta*FF_Sigma2(y)
-        elif (i == 7):
-            rate =  meta*FF_Sigma1(y)
-        elif (i == 8):
-            A = meta*FF_M(y)
-            B = eta*(qr**2)*FF_Delta(y)
+        if (i == 6):
+            rate = (1.0/16.0)*(qr**4)*eta*FF_Sigma2(E)
+        if (i == 7):
+            rate =  meta*FF_Sigma1(E)
+        if (i == 8):
+            A = meta*FF_M(E)
+            B = eta*(qr**2)*FF_Delta(E)
             rate =  0.25*(A+B)
-        elif (i == 9):
-            rate =  (1.0/16.0)*eta*(qr**2)*FF_Sigma1(y)
-        elif (i == 10):
-            rate =  0.25*eta*(qr**2)*FF_Sigma2(y)
-        elif (i == 11):
-            rate =  0.25*eta*(qr**2)*FF_M(y)
+        if (i == 9):
+            rate =  (1.0/16.0)*eta*(qr**2)*FF_Sigma1(E)
+        if (i == 10):
+            rate =  0.25*eta*(qr**2)*FF_Sigma2(E)
+        if (i == 11):
+            rate =  0.25*eta*(qr**2)*FF_M(E)
+
+        #Long-range interactions
+        if (i == 101):
+            rate =  (qr**-4)*eta*FF_M(E)
+        if (i == 104):
+            #rate =  (qr**-4)*(1.0/16.0)*eta*FF_SD(E)
+            rate = 0    #ZERO BY DEFINITION!
+        if (i == 105):
+            A = meta*FF_M(E)
+            B = eta*(qr**2)*FF_Delta(E)
+            rate =  0.25*(qr**-2.0)*(A+B)
+        if (i == 106):
+            rate =  (1.0/16.0)*eta*FF_Sigma2(E)
+        if (i == 111):
+            rate =  0.25*eta*(qr**-2)*FF_M(E)
 
     #Interference terms
     else:
         if ((i == 1 and j == 3) or (i == 3 and j == 1)):
-            rate = (1.0/2.0)*(qr**2)*eta*FF_MPhi2(y)
-        elif ((i == 4 and j == 5) or (i == 5 and j == 4)):
-            rate = -(1.0/8.0)*(qr**2)*eta*FF_Sigma1Delta(y)
-        elif ((i == 4 and j == 6) or (i == 6 and j == 4)):
-            rate = (1.0/16.0)*(qr**2)*eta*FF_Sigma2(y)
-        elif ((i == 8 and j == 9) or (i == 9 and j ==8)):
-            rate =  (1.0/8.0)*(qr**2)*eta*FF_Sigma1Delta(y)
+            rate = (1.0/2.0)*(qr**2)*eta*FF_MPhi2(E)
+        if ((i == 4 and j == 5) or (i == 5 and j == 4)):
+            rate = -(1.0/8.0)*(qr**2)*eta*FF_Sigma1Delta(E)
+        if ((i == 4 and j == 6) or (i == 6 and j == 4)):
+            rate = (1.0/16.0)*(qr**2)*eta*FF_Sigma2(E)
+        if ((i == 8 and j == 9) or (i == 9 and j ==8)):
+            rate =  (1.0/8.0)*(qr**2)*eta*FF_Sigma1Delta(E)
+        if ((i == 104 and j == 105) or (i == 105 and j == 104)):
+            rate =  -(1.0/8.0)*eta*FF_Sigma1Delta(E)
+        if ((i == 104) and (j == 106) or (i == 106 and j == 104)):
+            rate =  (1.0/16.0)*eta*FF_Sigma2(E)
 
 
+    conv =  (1.98e-14*1.0/(m_x+amu*1e-6))**2/(16.0*pi)
 
     # We need to do this, because the polynomial form factors
     # aren't valid up to arbitrarily high momenta...
-    #if (rate < 0):
-    #    return 0.0
-    #else:
-    #    return rate
-    return rate
-    
+    if (rate < 0):
+        return 0.0
+    else:
+        return rate*rate_prefactor(m_x)*conv
+
 #--------------------------------------------------------
 # Calculate differential rate in NREFT from two vectors of couplings:
 # cp_list and cn_list should be the (dimensional) couplings of the DM
 # to protons and neutrons for operators 1-11. That is, cp_list should
 # be a vector with 11 elements.
 # New version with Form Factors
-def dRdE_NREFT(E, m_A, m_x, cp_list, cn_list, target, vlag=230.0, sigmav=156.0,vesc=544.0):
+def dRdE_NREFT(E, m_A, m_x, cp_list, cn_list, target):
     #Sum over all the contributions from different operators
     
-    eta = calcEta(vmin(E, m_A, m_x),vlag=vlag, sigmav=sigmav, vesc=vesc)
-    meta = calcMEta(vmin(E, m_A, m_x),vlag=vlag, sigmav=sigmav, vesc=vesc)
+    eta = calcEta(vmin(E, m_A, m_x))
+    meta = calcMEta(vmin(E, m_A, m_x))
     amu = 931.5*1000
     q1 = np.sqrt(2*m_A*amu*E)
     
-    
-    
     dRdE_tot = 0.0
     for i in range(11):
-        dRdE_tot += dRdE_NREFT_sum(E, m_A, m_x, cp_list[i], cn_list[i], i+1, i+1, target, eta, meta, q1)
+        for j in range(11):
+            dRdE_tot += dRdE_NREFT_components(E, m_A, m_x, cp_list[i], cn_list[j], i+1, j+1, target, eta, meta, q1)
     
-    i0 = [1,4,4,8]
-    j0 = [3,5,6,9]
-    
-    for i,j in zip(i0,j0):
-        dRdE_tot += 2.0*dRdE_NREFT_sum(E, m_A, m_x, cp_list[i-1], cn_list[j-1], i, j, target, eta, meta, q1)
-        
-    conv =  (1.98e-14*1.0/(m_x+amu*1e-6))**2/(16.0*pi)
-    
-    # We need to do this, because the polynomial form factors
-    # aren't valid up to arbitrarily high momenta...
-    dRdE_tot = np.clip(dRdE_tot, 0, 1e30)
+    conv =  (1.98e-14*1.0/(m_x+amu))**2/(16.0*pi)
     
     return dRdE_tot*rate_prefactor(m_x)*conv
 
+def dRdE_NREFT_old(E, m_A, m_x, cp_list, cn_list, FFcoeffs):
+     #Sum over all the contributions from different operators
+     dRdE_tot = 0.0
+     for i in range(11):
+         for j in range(11):
+             dRdE_tot += dRdE_NREFT_components_old(E, m_A, m_x, cp_list[i], cn_list[j], i+1, j+1, FFcoeffs)    
+     return dRdE_tot
+
+#--------------------------------------------------------
+# Number of events in NREFT
+# See also dRdE_NREFT for more details
+# Optionally, you can pass a function 'eff' defining the detector efficiency
+def Nevents_NREFT_old(E_min, E_max, m_A, mx, cp_list, cn_list, FFcoeffs, eff=None):
+    if (eff == None):
+        eff = lambda x: 1
+
+    integ = lambda x: eff(x)*dRdE_NREFT(x, m_A, mx, cp_list, cn_list, FFcoeffs)
+    
+    return quad(integ, E_min, E_max)[0]
 
 #--------------------------------------------------------
 # Number of events in NREFT
