@@ -37,8 +37,9 @@ def calcEta(vmin, vlag=230.0, sigmav=156.0,vesc=544.0):
     
     vel_integral = np.clip(vel_integral, 0, 1e30)
 
-    
-    return 2*np.pi*N*vel_integral
+    # May need to replace 2pi as below, but probably not
+    # return 2*np.pi*N*vel_integral
+    return N*vel_integral
     
 #---------------------------------------------------------
 # Modified velocity integral
@@ -398,7 +399,7 @@ def dRdE_NREFT_components(E, m_A, m_x, cp, cn, i, j, target, eta, meta, q1):
 def dRdE_NREFT_sum(E, m_A, m_x, cp, cn, i, j, target, eta, meta, q1):
     #eta = calcEta(vmin(E, m_A, m_x))
     #meta = calcMEta(vmin(E, m_A, m_x))
-    amu = 931.5*1000
+    amu = 931.5*1000 # keV
     #q1 = np.sqrt(2*m_A*amu*E)
     qr = q1/amu
     
@@ -491,8 +492,6 @@ def dRdE_NREFT(E, m_A, m_x, cp_list, cn_list, target, vlag=230.0, sigmav=156.0,v
     amu = 931.5*1000
     q1 = np.sqrt(2*m_A*amu*E)
     
-    
-    
     dRdE_tot = 0.0
     for i in range(11):
         dRdE_tot += dRdE_NREFT_sum(E, m_A, m_x, cp_list[i], cn_list[i], i+1, i+1, target, eta, meta, q1)
@@ -503,13 +502,14 @@ def dRdE_NREFT(E, m_A, m_x, cp_list, cn_list, target, vlag=230.0, sigmav=156.0,v
     for i,j in zip(i0,j0):
         dRdE_tot += 2.0*dRdE_NREFT_sum(E, m_A, m_x, cp_list[i-1], cn_list[j-1], i, j, target, eta, meta, q1)
         
-    conv =  (1.98e-14*1.0/(m_x+amu*1e-6))**2/(16.0*pi)
+    # conv =  (1.98e-14*1.0/(m_x+amu*1e-6))**2/(16.0*pi)
+    conv = (0.3/2./np.pi/m_x)*1.69612985e14 # 1 GeV^-4 * cm^-3 * km^-1 * s * c^6 * hbar^2 to keV^-1 kg^-1 day^-1
     
     # We need to do this, because the polynomial form factors
     # aren't valid up to arbitrarily high momenta...
     dRdE_tot = np.clip(dRdE_tot, 0, 1e30)
     
-    return dRdE_tot*rate_prefactor(m_x)*conv
+    return dRdE_tot*conv
 
 
 #--------------------------------------------------------
