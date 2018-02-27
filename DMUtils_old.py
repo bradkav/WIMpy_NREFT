@@ -469,7 +469,7 @@ def dRdE_NREFT_components_old(E, m_A, m_x, cp, cn, i, j, FFcoeffs):
             rate = -(1.0/8.0)*(qr**2)*eta*FF_Sigma1Delta(E)
         if ((i == 4 and j == 6) or (i == 6 and j == 4)):
             rate = (1.0/16.0)*(qr**2)*eta*FF_Sigma2(E)
-        if ((i == 8 and j == 9) or (i == 9 and j ==8)):
+        if ((i == 8 and j == 9) or (i == 9 and j == 8)):
             rate =  (1.0/8.0)*(qr**2)*eta*FF_Sigma1Delta(E)
         if ((i == 104 and j == 105) or (i == 105 and j == 104)):
             rate =  -(1.0/8.0)*eta*FF_Sigma1Delta(E)

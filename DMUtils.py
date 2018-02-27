@@ -24,8 +24,9 @@ from Wfunctions import WD, WM, WMP2, WP1, WP2, WS1, WS2, WS1D
 #---------------------------------------------------------
 # Velocity integral eta
 def calcEta(vmin, vlag=230.0, sigmav=156.0,vesc=544.0):
-    aplus = np.minimum((vmin+vlag), vesc)/(np.sqrt(2)*sigmav)
-    aminus = np.minimum((vmin-vlag), vesc)/(np.sqrt(2)*sigmav)
+    
+    aplus = np.minimum((vmin+vlag), vmin*0.0 + vesc)/(np.sqrt(2)*sigmav)
+    aminus = np.minimum((vmin-vlag), vmin*0.0 + vesc)/(np.sqrt(2)*sigmav)
     aesc = vesc/(np.sqrt(2)*sigmav)
     
     vel_integral = 0
@@ -46,8 +47,8 @@ def calcEta(vmin, vlag=230.0, sigmav=156.0,vesc=544.0):
 def calcMEta(vmin, vlag=230.0, sigmav=156.0,vesc=544.0):
     v0 = np.sqrt(2.0)*sigmav
     amin = vmin/v0
-    aplus = np.minimum((vmin+vlag), vesc)/v0
-    aminus = np.minimum((vmin-vlag), vesc)/v0
+    aplus = np.minimum((vmin+vlag), vmin*0.0 + vesc)/v0
+    aminus = np.minimum((vmin-vlag), vmin*0.0 + vesc)/v0
     aesc = vesc/v0
     aE = vlag/v0
     
@@ -146,89 +147,91 @@ def calcNREFTFormFactor(E,m_A,index,cp,cn, FFcoeffs):
 #--------------------------------------------------------
 def calcWD(y, target="Xe131", cp=1, cn=1):
     c = np.array([(cp+ cn), (cp- cn)])
-    tau1 = np.array([0.,1.])
-    tau2 = np.array([0.,1.])
+    tau1 = np.array([0,1])
+    tau2 = np.array([0,1])
     WDval = []
-    for i in range(0,2):
-        for j in range(0,2):
-            WDval.append(c[i]*c[j]*WD.calcwd(tau1[i], tau2[j], y, target))
+    for i in range(2):
+        for j in range(2):
+            WDval.append(c[i]*c[j]*np.vectorize(WD.calcwd)(tau1[i], tau2[j], y, target))
     return sum(WDval)
 
 #--------------------------------------------------------
 def calcWM(y, target="Xe131", cp=1, cn=1):
     c = np.array([(cp+ cn), (cp- cn)])
+    #print c.shape, (cp + cn).shape
     tau1 = np.array([0,1])
     tau2 = np.array([0,1])
     WMval = []
-    for i in range(0,2):
-        for j in range(0,2):
-            WMval.append(c[i]*c[j]*WM.calcwm(tau1[i], tau2[j], y, target))
+    #WMval = y*0.0
+    for i in range(2):
+        for j in range(2):
+            WMval.append(c[i]*c[j]*np.vectorize(WM.calcwm)(tau1[i], tau2[j], y, target))
     return sum(WMval)
 
 #--------------------------------------------------------
 def calcWMP2(y, target="Xe131", cp=1, cn=1):
     c = np.array([(cp+ cn), (cp- cn)])
-    tau1 = np.array([0.,1.])
-    tau2 = np.array([0.,1.])
+    tau1 = np.array([0,1])
+    tau2 = np.array([0,1])
     WMP2val = []
-    for i in range(0,2):
-        for j in range(0,2):
-            WMP2val.append(c[i]*c[j]*WMP2.calcwmp2(tau1[i], tau2[j], y, target))
+    for i in range(2):
+        for j in range(2):
+            WMP2val.append(c[i]*c[j]*np.vectorize(WMP2.calcwmp2)(tau1[i], tau2[j], y, target))
     return sum(WMP2val)
 
 #--------------------------------------------------------
 def calcWP1(y, target="Xe131", cp=1, cn=1):
     c = np.array([(cp+ cn), (cp- cn)])
-    tau1 = np.array([0.,1.])
-    tau2 = np.array([0.,1.])
+    tau1 = np.array([0,1])
+    tau2 = np.array([0,1])
     WP1val = []
-    for i in range(0,2):
-        for j in range(0,2):
-            WP1val.append(c[i]*c[j]*WP1.calcwp1(tau1[i], tau2[j], y, target))
+    for i in range(2):
+        for j in range(2):
+            WP1val.append(c[i]*c[j]*np.vectorize(WP1.calcwp1)(tau1[i], tau2[j], y, target))
     return sum(WP1val)
 
 #--------------------------------------------------------
 def calcWP2(y, target="Xe131", cp=1, cn=1):
     c = np.array([(cp+ cn), (cp- cn)])
-    tau1 = np.array([0.,1.])
-    tau2 = np.array([0.,1.])
+    tau1 = np.array([0,1])
+    tau2 = np.array([0,1])
     WP2val = []
-    for i in range(0,2):
-        for j in range(0,2):
-            WP2val.append(c[i]*c[j]*WP2.calcwp2(tau1[i], tau2[j], y, target))
+    for i in range(2):
+        for j in range(2):
+            WP2val.append(c[i]*c[j]*np.vectorize(WP2.calcwp2)(tau1[i], tau2[j], y, target))
     return sum(WP2val)
 
 #--------------------------------------------------------
 def calcWS1(y, target="Xe131", cp=1, cn=1):
     c = np.array([(cp+ cn), (cp- cn)])
-    tau1 = np.array([0.,1.])
-    tau2 = np.array([0.,1.])
+    tau1 = np.array([0,1])
+    tau2 = np.array([0,1])
     WS1val = []
-    for i in range(0,2):
-        for j in range(0,2):
-            WS1val.append(c[i]*c[j]*WS1.calcws1(tau1[i], tau2[j], y, target))
+    for i in range(2):
+        for j in range(2):
+            WS1val.append(c[i]*c[j]*np.vectorize(WS1.calcws1)(tau1[i], tau2[j], y, target))
     return sum(WS1val)
 
 #--------------------------------------------------------
 def calcWS1D(y, target="Xe131", cp=1, cn=1):
     c = np.array([(cp+ cn), (cp- cn)])
-    tau1 = np.array([0.,1.])
-    tau2 = np.array([0.,1.])
+    tau1 = np.array([0,1])
+    tau2 = np.array([0,1])
     WS1Dval = []
-    for i in range(0,2):
-        for j in range(0,2):
-            WS1Dval.append(c[i]*c[j]*WS1D.calcws1d(tau1[i], tau2[j], y, target))
+    for i in range(2):
+        for j in range(2):
+            WS1Dval.append(c[i]*c[j]*np.vectorize(WS1D.calcws1d)(tau1[i], tau2[j], y, target))
     return sum(WS1Dval)
 
 #--------------------------------------------------------
 def calcWS2(y, target="Xe131", cp=1, cn=1):
     c = np.array([(cp+ cn), (cp- cn)])
-    tau1 = np.array([0.,1.])
-    tau2 = np.array([0.,1.])
+    tau1 = np.array([0,1])
+    tau2 = np.array([0,1])
     WS2val = []
-    for i in range(0,2):
-        for j in range(0,2):
-            WS2val.append(c[i]*c[j]*WS2.calcws2(tau1[i], tau2[j], y, target))
+    for i in range(2):
+        for j in range(2):
+            WS2val.append(c[i]*c[j]*np.vectorize(WS2.calcws2)(tau1[i], tau2[j], y, target))
     return sum(WS2val)
 
 # Select the appropriate form factor from the list
@@ -396,6 +399,70 @@ def dRdE_NREFT_components(E, m_A, m_x, cp, cn, i, j, target, eta, meta, q1):
 # Differential recoil rate in NREFT framework
 # Calculates the contribution from the interference of operators
 # i and j (with couplings cp and cn to protons and neutrons)
+def dRdE_NREFT(E, m_A, m_x, cp, cn, target, vlag=230.0, sigmav=156.0, vesc=544.0):
+    #eta = calcEta(vmin(E, m_A, m_x))
+    #meta = calcMEta(vmin(E, m_A, m_x))
+    
+    eta = calcEta(vmin(E, m_A, m_x),vlag=vlag, sigmav=sigmav, vesc=vesc)
+    meta = calcMEta(vmin(E, m_A, m_x),vlag=vlag, sigmav=sigmav, vesc=vesc)
+    amu = 931.5*1000 # keV
+    q1 = np.sqrt(2*m_A*amu*E)
+
+    qr = q1/amu
+    
+    # Required for form factors
+    q2 = q1*(1e-12/1.97e-7)
+    b = np.sqrt(41.467/(45*m_A**(-1.0/3.0) - 25*m_A**(-2.0/3.0)))
+    y = (q2*b/2)**2
+    
+    jx = 0.5
+    jfac = jx*(jx+1.0)
+    
+    rate = E*0.0
+    
+    c = [cp + cn, cp - cn]
+    
+    for tau1 in [0,1]:
+        for tau2 in [0,1]:
+            
+            c1 = c[tau1]
+            c2 = c[tau2]
+    
+            R_M = c1[0]*c2[0]*eta + jfac/3.0*(qr**2*meta*c1[4]*c2[4] \
+                        + meta*c1[7]*c2[7] + qr**2*eta*c1[10]*c2[10])
+            rate += R_M*np.vectorize(WM.calcwm)(tau1, tau2, y, target)
+    
+            R_P2 = 0.25*qr**2*c1[2]*c2[2]*eta
+            rate += R_P2*np.vectorize(WP2.calcwp2)(tau1, tau2, y, target)
+    
+            #Watch out, this one is the wrong way round...
+            R_P2M = eta*c1[2]*c2[0]
+            rate += R_P2M*np.vectorize(WMP2.calcwmp2)(tau2, tau1, y, target)
+    
+            R_S2 = eta*c1[9]*c2[9]*0.25*qr**2 + eta*jfac/12.0*(c1[3]*c2[3] + \
+                        qr**2*(c1[3]*c2[5] + c1[5]*c2[3]) + qr**4*c1[5]*c2[5])
+            rate += R_S2*np.vectorize(WS2.calcws2)(tau1, tau2, y, target)
+    
+            R_S1 = (1.0/8.0)*meta*(qr**2*c1[2]*c2[2] + c1[6]*c2[6]) +\
+                        jfac/12.0*eta*(c1[3]*c2[3] + qr**2*c1[8]*c2[8])
+            rate += R_S1*np.vectorize(WS1.calcws1)(tau1, tau2, y, target)
+    
+            R_D = jfac/3.0*eta*(qr**2*c1[4]*c2[4] + c1[7]*c2[7])
+            rate += R_D*np.vectorize(WD.calcwd)(tau1, tau2, y, target)
+    
+            #This one might be flipped too
+            R_S1D = jfac/3.0*eta*(c1[4]*c2[3] - c1[7]*c2[8])
+            rate += R_S1D*np.vectorize(WS1D.calcws1d)(tau2, tau1, y, target)
+
+    # conv =  (1.98e-14*1.0/(m_x+amu*1e-6))**2/(16.0*pi)
+    conv = (0.3/2./np.pi/m_x)*1.69612985e14 # 1 GeV^-4 * cm^-3 * km^-1 * s * c^6 * hbar^2 to keV^-1 kg^-1 day^-1
+
+    return rate*conv
+
+#--------------------------------------------------------
+# Differential recoil rate in NREFT framework
+# Calculates the contribution from the interference of operators
+# i and j (with couplings cp and cn to protons and neutrons)
 def dRdE_NREFT_sum(E, m_A, m_x, cp, cn, i, j, target, eta, meta, q1):
     #eta = calcEta(vmin(E, m_A, m_x))
     #meta = calcMEta(vmin(E, m_A, m_x))
@@ -407,9 +474,9 @@ def dRdE_NREFT_sum(E, m_A, m_x, cp, cn, i, j, target, eta, meta, q1):
     q2 = q1*(1e-12/1.97e-7)
     b = np.sqrt(41.467/(45*m_A**(-1.0/3.0) - 25*m_A**(-2.0/3.0)))
     y = (q2*b/2)**2
-        
-        
-    #Calculate all the form factors, for ease of typing!
+    
+    
+    #Write down all the form factors, for ease of typing!
     FF_M = lambda x: calcWM(x, target=target, cp=cp, cn=cn)
     FF_Sigma1 = lambda x: calcWS1(x, target=target, cp=cp, cn=cn)
     FF_Sigma2 = lambda x: calcWS2(x, target=target, cp=cp, cn=cn)
@@ -484,7 +551,7 @@ def dRdE_NREFT_sum(E, m_A, m_x, cp, cn, i, j, target, eta, meta, q1):
 # to protons and neutrons for operators 1-11. That is, cp_list should
 # be a vector with 11 elements.
 # New version with Form Factors
-def dRdE_NREFT(E, m_A, m_x, cp_list, cn_list, target, vlag=230.0, sigmav=156.0,vesc=544.0):
+def dRdE_NREFT_old(E, m_A, m_x, cp_list, cn_list, target, vlag=230.0, sigmav=156.0,vesc=544.0):
     #Sum over all the contributions from different operators
     
     eta = calcEta(vmin(E, m_A, m_x),vlag=vlag, sigmav=sigmav, vesc=vesc)
@@ -492,22 +559,25 @@ def dRdE_NREFT(E, m_A, m_x, cp_list, cn_list, target, vlag=230.0, sigmav=156.0,v
     amu = 931.5*1000
     q1 = np.sqrt(2*m_A*amu*E)
     
-    dRdE_tot = 0.0
+    
+    dRdE_tot = 0.0*E
     for i in range(11):
         dRdE_tot += dRdE_NREFT_sum(E, m_A, m_x, cp_list[i], cn_list[i], i+1, i+1, target, eta, meta, q1)
     
     i0 = [1,4,4,8]
     j0 = [3,5,6,9]
     
+    #Need to double-check this...
     for i,j in zip(i0,j0):
-        dRdE_tot += 2.0*dRdE_NREFT_sum(E, m_A, m_x, cp_list[i-1], cn_list[j-1], i, j, target, eta, meta, q1)
+        dRdE_tot += dRdE_NREFT_sum(E, m_A, m_x, cp_list[i-1], cn_list[j-1], i, j, target, eta, meta, q1)
+        dRdE_tot += dRdE_NREFT_sum(E, m_A, m_x, cp_list[j-1], cn_list[i-1], i, j, target, eta, meta, q1)
         
     # conv =  (1.98e-14*1.0/(m_x+amu*1e-6))**2/(16.0*pi)
     conv = (0.3/2./np.pi/m_x)*1.69612985e14 # 1 GeV^-4 * cm^-3 * km^-1 * s * c^6 * hbar^2 to keV^-1 kg^-1 day^-1
     
     # We need to do this, because the polynomial form factors
     # aren't valid up to arbitrarily high momenta...
-    dRdE_tot = np.clip(dRdE_tot, 0, 1e30)
+    #dRdE_tot = np.clip(dRdE_tot, 0, 1e30)
     
     return dRdE_tot*conv
 
