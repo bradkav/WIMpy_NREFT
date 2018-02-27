@@ -457,6 +457,8 @@ def dRdE_NREFT(E, m_A, m_x, cp, cn, target, vlag=230.0, sigmav=156.0, vesc=544.0
     # conv =  (1.98e-14*1.0/(m_x+amu*1e-6))**2/(16.0*pi)
     conv = (0.3/2./np.pi/m_x)*1.69612985e14 # 1 GeV^-4 * cm^-3 * km^-1 * s * c^6 * hbar^2 to keV^-1 kg^-1 day^-1
 
+    rate = np.clip(rate, 0, 1e30)
+
     return rate*conv
 
 #--------------------------------------------------------
