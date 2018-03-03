@@ -5,7 +5,7 @@
 #
 # Author: Bradley J Kavanagh
 # Email: bradkav@gmail.com
-# Last updated: 24/07/2017
+# Last updated: 02/03/2018
 
 import numpy as np
 from numpy import pi, cos, sin
@@ -13,13 +13,26 @@ from scipy.integrate import trapz, cumtrapz, quad
 from scipy.interpolate import interp1d
 from numpy.random import rand
 from scipy.special import erf
-# from scipy.special import spherical_jn
+
+#Nuclear structure functions
 from Wfunctions import WD, WM, WMP2, WP1, WP2, WS1, WS2, WS1D
+
+
+#Load in the list of nuclear spins and atomic masses
+target_list = np.loadtxt("Nuclei.txt", usecols=(0,), dtype='string')
+J_list = np.loadtxt("Nuclei.txt", usecols=(1,))
+A_list = np.loadtxt("Nuclei.txt", usecols=(2,))
+
+#TO-DO:
+#   - Implement some kind of 'dict' or something here for the target lists
+#   - Replace 'A' as a parameter in the functions, by looking up in A_list
+
 
 #----------------------------------------------------
 #---- Velocity Integrals (and helper functions) -----
 #----------------------------------------------------
 
+rho0 = 0.3 #GeV/cm^3
 
 #---------------------------------------------------------
 # Velocity integral eta
@@ -38,8 +51,6 @@ def calcEta(vmin, vlag=230.0, sigmav=156.0,vesc=544.0):
     
     vel_integral = np.clip(vel_integral, 0, 1e30)
 
-    # May need to replace 2pi as below, but probably not
-    # return 2*np.pi*N*vel_integral
     return N*vel_integral
     
 #---------------------------------------------------------
@@ -60,26 +71,29 @@ def calcMEta(vmin, vlag=230.0, sigmav=156.0,vesc=544.0):
 
 #-----------------------------------------------------------
 # Minimum velocity 
-def vmin(E, m_N, m_x):
-    res = E*0.0
-    m_N2 = m_N*0.9315
-    mu = (m_N2*m_x)/(m_N2+m_x)
-    res =  3e5*np.sqrt((E/1e6)*(m_N2)/(2*mu*mu))
-    return res
-    
-#-----------------------------------------------------------
-# A helper function for calculating the prefactors to dRdE
-def rate_prefactor(m_x):
-    rho0 = 0.3
-    mu = 1.78e-27*reduced_m(1.0, m_x)
-    return 1.38413e-12*rho0/(4.0*np.pi*m_x*mu*mu)
-    
+def vmin(E, A, m_x):
+    m_A = A*0.9315
+    mu = (m_A*m_x)/(m_A+m_x)
+    v =  3e5*np.sqrt((E/1e6)*(m_A)/(2*mu*mu))
+    return v
     
 #-----------------------------------------------------------
 # Reduced mass - input A as nucleon number and m_x in GeV
 def reduced_m(A, m_x):
     m_A = 0.9315*A
     return (m_A * m_x)/(m_A + m_x)
+    
+# A helper function for calculating the prefactors to dRdE
+def rate_prefactor(m_x):
+    rho0 = 0.3
+    mu = 1.78e-27*reduced_m(1.0, m_x)
+    return 1.38413e-12*rho0/(m_x*mu*mu)
+    
+#0.197 GeV  = 1e13/cm
+# -> GeV^-1 = 1.97e-14 cm
+    
+def coupling_to_xsec(c, m_x):
+    return (1.97e-14)**2*c**2*(reduced_m(1.0, m_x)**2)/np.pi
     
 #----------------------------------------------------
 #-------------------- Form Factors ------------------
@@ -89,9 +103,6 @@ def reduced_m(A, m_x):
 #-----------------------------------------------------------
 # Standard Helm Form Factor for SI scattering
 def calcSIFormFactor(E, m_N, old=False):
-    #Helm
-    if (E < 1e-3):
-        return E*0 + 1
 
     #Define conversion factor from amu-->keV
     amu = 931.5*1e3
@@ -114,156 +125,10 @@ def calcSIFormFactor(E, m_N, old=False):
     x = q2*R1
     J1 = np.sin(x)/x**2 - np.cos(x)/x
     F = 3*J1/x
-    return (F**2)*(np.exp(-(q2*s)**2))
     
-#--------------------------------------------------------
-# Calculate the NREFT nuclear form factors (from 
-# coefficients given by 'FFcoeffs'), with couplings cp and cn
-# to protons and neutrons
-def calcNREFTFormFactor(E,m_A,index,cp,cn, FFcoeffs):
-    #Define conversion factor from amu-->keV
-    amu = 931.5*1000
-
-    #Convert recoil energy to momentum transfer q in keV
-    q1 = np.sqrt(2*m_A*amu*E)
-    #Convert q into fm^-1
-    q2 = q1*(1e-12/1.97e-7)
-    b = np.sqrt(41.467/(45*m_A**(-1.0/3.0) - 25*m_A**(-2.0/3.0)))
-    #print " b = ", b, m_A
-    y = (q2*b/2)**2
-
-    vpp = FFcoeffs[4*(index-1),:]
-    vpn = FFcoeffs[4*(index-1)+1,:]
-    vnp = FFcoeffs[4*(index-1)+2,:]
-    vnn = FFcoeffs[4*(index-1)+3,:]
-
-    Fpp = np.polyval(vpp[::-1],y)
-    Fnn = np.polyval(vnn[::-1],y)
-    Fnp = np.polyval(vnp[::-1],y)
-    Fpn = np.polyval(vpn[::-1],y)
-    return (cn*cn*Fnn + cp*cp*Fpp + cn*cp*Fpn + cp*cn*Fnp)*np.exp(-2*y)
-
-# Replacement Fortran functions
-#--------------------------------------------------------
-def calcWD(y, target="Xe131", cp=1, cn=1):
-    c = np.array([(cp+ cn), (cp- cn)])
-    tau1 = np.array([0,1])
-    tau2 = np.array([0,1])
-    WDval = []
-    for i in range(2):
-        for j in range(2):
-            WDval.append(c[i]*c[j]*np.vectorize(WD.calcwd)(tau1[i], tau2[j], y, target))
-    return sum(WDval)
-
-#--------------------------------------------------------
-def calcWM(y, target="Xe131", cp=1, cn=1):
-    c = np.array([(cp+ cn), (cp- cn)])
-    #print c.shape, (cp + cn).shape
-    tau1 = np.array([0,1])
-    tau2 = np.array([0,1])
-    WMval = []
-    #WMval = y*0.0
-    for i in range(2):
-        for j in range(2):
-            WMval.append(c[i]*c[j]*np.vectorize(WM.calcwm)(tau1[i], tau2[j], y, target))
-    return sum(WMval)
-
-#--------------------------------------------------------
-def calcWMP2(y, target="Xe131", cp=1, cn=1):
-    c = np.array([(cp+ cn), (cp- cn)])
-    tau1 = np.array([0,1])
-    tau2 = np.array([0,1])
-    WMP2val = []
-    for i in range(2):
-        for j in range(2):
-            WMP2val.append(c[i]*c[j]*np.vectorize(WMP2.calcwmp2)(tau1[i], tau2[j], y, target))
-    return sum(WMP2val)
-
-#--------------------------------------------------------
-def calcWP1(y, target="Xe131", cp=1, cn=1):
-    c = np.array([(cp+ cn), (cp- cn)])
-    tau1 = np.array([0,1])
-    tau2 = np.array([0,1])
-    WP1val = []
-    for i in range(2):
-        for j in range(2):
-            WP1val.append(c[i]*c[j]*np.vectorize(WP1.calcwp1)(tau1[i], tau2[j], y, target))
-    return sum(WP1val)
-
-#--------------------------------------------------------
-def calcWP2(y, target="Xe131", cp=1, cn=1):
-    c = np.array([(cp+ cn), (cp- cn)])
-    tau1 = np.array([0,1])
-    tau2 = np.array([0,1])
-    WP2val = []
-    for i in range(2):
-        for j in range(2):
-            WP2val.append(c[i]*c[j]*np.vectorize(WP2.calcwp2)(tau1[i], tau2[j], y, target))
-    return sum(WP2val)
-
-#--------------------------------------------------------
-def calcWS1(y, target="Xe131", cp=1, cn=1):
-    c = np.array([(cp+ cn), (cp- cn)])
-    tau1 = np.array([0,1])
-    tau2 = np.array([0,1])
-    WS1val = []
-    for i in range(2):
-        for j in range(2):
-            WS1val.append(c[i]*c[j]*np.vectorize(WS1.calcws1)(tau1[i], tau2[j], y, target))
-    return sum(WS1val)
-
-#--------------------------------------------------------
-def calcWS1D(y, target="Xe131", cp=1, cn=1):
-    c = np.array([(cp+ cn), (cp- cn)])
-    tau1 = np.array([0,1])
-    tau2 = np.array([0,1])
-    WS1Dval = []
-    for i in range(2):
-        for j in range(2):
-            WS1Dval.append(c[i]*c[j]*np.vectorize(WS1D.calcws1d)(tau1[i], tau2[j], y, target))
-    return sum(WS1Dval)
-
-#--------------------------------------------------------
-def calcWS2(y, target="Xe131", cp=1, cn=1):
-    c = np.array([(cp+ cn), (cp- cn)])
-    tau1 = np.array([0,1])
-    tau2 = np.array([0,1])
-    WS2val = []
-    for i in range(2):
-        for j in range(2):
-            WS2val.append(c[i]*c[j]*np.vectorize(WS2.calcws2)(tau1[i], tau2[j], y, target))
-    return sum(WS2val)
-
-# Select the appropriate form factor from the list
-#--------------------------------------------------------
-def calcFF_M(E, m_A, FFcoeffs, cp=1, cn=1):
-  return calcNREFTFormFactor(E, m_A, 1, cp, cn, FFcoeffs)
-
-#--------------------------------------------------------
-def calcFF_Sigma1(E, m_A, FFcoeffs, cp=1, cn=1):
-  return calcNREFTFormFactor(E, m_A, 2, cp, cn, FFcoeffs)
-    
-#--------------------------------------------------------
-def calcFF_Sigma2(E, m_A,FFcoeffs, cp=1, cn=1):
-  return calcNREFTFormFactor(E, m_A, 3, cp, cn, FFcoeffs)   
-  
-#--------------------------------------------------------
-def calcFF_Delta(E, m_A, FFcoeffs,cp=1, cn=1):
-  return calcNREFTFormFactor(E, m_A, 4, cp, cn, FFcoeffs)
-
-#--------------------------------------------------------
-def calcFF_Phi2(E, m_A, FFcoeffs,cp=1, cn=1):
-  return calcNREFTFormFactor(E, m_A, 5, cp, cn, FFcoeffs)
-
-#--------------------------------------------------------
-def calcFF_MPhi2(E, m_A, FFcoeffs,cp=1, cn=1):
-  return calcNREFTFormFactor(E, m_A, 6, cp, cn, FFcoeffs)
-
-#--------------------------------------------------------
-def calcFF_Sigma1Delta(E, m_A, FFcoeffs,cp=1, cn=1):
-  return calcNREFTFormFactor(E, m_A, 7, cp, cn, FFcoeffs)
-
-
+    formfactor = (F**2)*(np.exp(-(q2*s)**2))
+    #formfactor[E < 1e-3] = 1.0
+    return formfactor
 
     
 #----------------------------------------------
@@ -273,148 +138,44 @@ def calcFF_Sigma1Delta(E, m_A, FFcoeffs,cp=1, cn=1):
 #--------------------------------------------------------
 # Standard Spin-Independent recoil rate
 # for a particle with (N_p,N_n) protons and neutrons
-def dRdE_standard(E, N_p, N_n, mx, sig):
+def dRdE_standard(E, N_p, N_n, m_x, sig, vlag=232.0, sigmav=156.0, vesc=544.0):
     A = N_p + N_n   
     #print A
     int_factor = sig*calcSIFormFactor(E, A)*(A**2)
     
-    return rate_prefactor(mx)*int_factor*calcEta(vmin(E, A, mx), vlag=232, sigmav=156, vesc=544)
+    return rate_prefactor(m_x)*int_factor*calcEta(vmin(E, A, m_x), vlag, sigmav, vesc)
 
 #--------------------------------------------------------
 # Total number of events for standard SI DM
-def Nevents_standard(E_min, E_max, N_p, N_n, mx, sig, eff=None):
+def Nevents_standard(E_min, E_max, N_p, N_n, m_x, sig, eff=None,vlag=232.0, sigmav=156.0, vesc=544.0):
     if (eff == None):
-        integ = lambda x: dRdE_standard(x, N_p, N_n, mx, sig)
+        integ = lambda x: dRdE_standard(x, N_p, N_n, m_x, sig)
         print(" No efficiency!")
     else:
-        integ = lambda x: eff(x)*dRdE_standard(x, N_p, N_n, mx, sig)
+        integ = lambda x: eff(x)*dRdE_standard(x, N_p, N_n, m_x, sig)
     return quad(integ, E_min, E_max)[0]
+ 
  
 #--------------------------------------------------------
 # Differential recoil rate in NREFT framework
 # Calculates the contribution from the interference of operators
 # i and j (with couplings cp and cn to protons and neutrons)
-def dRdE_NREFT_components(E, m_A, m_x, cp, cn, i, j, target, eta, meta, q1):
-    #eta = calcEta(vmin(E, m_A, m_x))
-    #meta = calcMEta(vmin(E, m_A, m_x))
-    amu = 931.5*1000
-    #q1 = np.sqrt(2*m_A*amu*E)
+def dRdE_NREFT(E, A, m_x, cp, cn, target, vlag=232.0, sigmav=156.0, vesc=544.0):
+    
+    eta = calcEta(vmin(E, A, m_x),vlag=vlag, sigmav=sigmav, vesc=vesc)
+    meta = calcMEta(vmin(E, A, m_x),vlag=vlag, sigmav=sigmav, vesc=vesc)
+    amu = 931.5e3 # keV
+    q1 = np.sqrt(2*A*amu*E)
+
+    #Recoil momentum over nucleon mass
     qr = q1/amu
     
     # Required for form factors
     q2 = q1*(1e-12/1.97e-7)
-    b = np.sqrt(41.467/(45*m_A**(-1.0/3.0) - 25*m_A**(-2.0/3.0)))
-    y = (q2*b/2)**2
-        
-        
-    #Calculate all the form factors, for ease of typing!
-    FF_M = lambda x: calcWM(x, target=target, cp=cp, cn=cn)
-    FF_Sigma1 = lambda x: calcWS1(x, target=target, cp=cp, cn=cn)
-    FF_Sigma2 = lambda x: calcWS2(x, target=target, cp=cp, cn=cn)
-    FF_Delta = lambda x: calcWD(x, target=target, cp=cp, cn=cn)
-    FF_Phi1 = lambda x: calcWP1(x, target=target, cp=cp, cn=cn)
-    FF_Phi2 = lambda x: calcWP2(x, target=target, cp=cp, cn=cn)
-    FF_MPhi2 = lambda x: calcWMP2(x, target=target, cp=cp, cn=cn)
-    FF_Sigma1Delta = lambda x: calcWS1D(x, target=target, cp=cp, cn=cn)
-
-    #FF_SD = lambda x: calcFF_SD(x, m_A, FFcoeffs, cp, cn)
-
-    rate = 0.0
-
-    #Non-interference terms!
-    if (i == j):
-        #Contact interactions
-
-        if (i == 1): #STANDARD SPIN-INDEPENDENT
-            rate = eta*FF_M(y)
-        elif (i == 2):
-            rate = 0
-        elif (i == 3):
-            A = meta*FF_Sigma1(y)
-            B = 0.25*(qr**2)*eta*FF_Phi2(y)
-            rate = (qr**2)*(A+B)
-        elif (i == 4): #STANDARD SPIN-DEPENDENT
-            rate = eta*(1.0/16.0)*(FF_Sigma1(y) + FF_Sigma2(y))
-            #rate = (1.0/16.0)*eta*FF_SD(E)*(1.0/4.0)
-        elif (i == 5):
-            A = meta*FF_M(y)
-            B = eta*(qr**2)*FF_Delta(y)
-            rate = 0.25*(qr**2)*(A+B)
-        elif (i == 6):
-            rate = (1.0/16.0)*(qr**4)*eta*FF_Sigma2(y)
-        elif (i == 7):
-            rate =  meta*FF_Sigma1(y)
-        elif (i == 8):
-            A = meta*FF_M(y)
-            B = eta*(qr**2)*FF_Delta(y)
-            rate =  0.25*(A+B)
-        elif (i == 9):
-            rate =  (1.0/16.0)*eta*(qr**2)*FF_Sigma1(y)
-        elif (i == 10):
-            rate =  0.25*eta*(qr**2)*FF_Sigma2(y)
-        elif (i == 11):
-            rate =  0.25*eta*(qr**2)*FF_M(y)
-
-        #Long-range interactions
-        elif (i == 101):
-            rate =  (qr**-4)*eta*FF_M(y)
-        elif (i == 104):
-            #rate =  (qr**-4)*(1.0/16.0)*eta*FF_SD(E)
-            rate = 0    #ZERO BY DEFINITION!
-        elif (i == 105):
-            A = meta*FF_M(y)
-            B = eta*(qr**2)*FF_Delta(y)
-            rate =  0.25*(qr**-2.0)*(A+B)
-        elif (i == 106):
-            rate =  (1.0/16.0)*eta*FF_Sigma2(y)
-        elif (i == 111):
-            rate =  0.25*eta*(qr**-2)*FF_M(y)
-
-    #Interference terms
-    else:
-        if ((i == 1 and j == 3) or (i == 3 and j == 1)):
-            rate = (1.0/2.0)*(qr**2)*eta*FF_MPhi2(y)
-        elif ((i == 4 and j == 5) or (i == 5 and j == 4)):
-            rate = -(1.0/8.0)*(qr**2)*eta*FF_Sigma1Delta(y)
-        elif ((i == 4 and j == 6) or (i == 6 and j == 4)):
-            rate = (1.0/16.0)*(qr**2)*eta*FF_Sigma2(y)
-        elif ((i == 8 and j == 9) or (i == 9 and j ==8)):
-            rate =  (1.0/8.0)*(qr**2)*eta*FF_Sigma1Delta(y)
-        elif ((i == 104 and j == 105) or (i == 105 and j == 104)):
-            rate =  -(1.0/8.0)*eta*FF_Sigma1Delta(y)
-        elif ((i == 104) and (j == 106) or (i == 106 and j == 104)):
-            rate =  (1.0/16.0)*eta*FF_Sigma2(y)
-        
-
-
-
-    # We need to do this, because the polynomial form factors
-    # aren't valid up to arbitrarily high momenta...
-    if (rate < 0):
-        return 0.0
-    else:
-        return rate
-
-#--------------------------------------------------------
-# Differential recoil rate in NREFT framework
-# Calculates the contribution from the interference of operators
-# i and j (with couplings cp and cn to protons and neutrons)
-def dRdE_NREFT(E, m_A, m_x, cp, cn, target, vlag=230.0, sigmav=156.0, vesc=544.0):
-    #eta = calcEta(vmin(E, m_A, m_x))
-    #meta = calcMEta(vmin(E, m_A, m_x))
-    
-    eta = calcEta(vmin(E, m_A, m_x),vlag=vlag, sigmav=sigmav, vesc=vesc)
-    meta = calcMEta(vmin(E, m_A, m_x),vlag=vlag, sigmav=sigmav, vesc=vesc)
-    amu = 931.5*1000 # keV
-    q1 = np.sqrt(2*m_A*amu*E)
-
-    qr = q1/amu
-    
-    # Required for form factors
-    q2 = q1*(1e-12/1.97e-7)
-    b = np.sqrt(41.467/(45*m_A**(-1.0/3.0) - 25*m_A**(-2.0/3.0)))
+    b = np.sqrt(41.467/(45*A**(-1.0/3.0) - 25*A**(-2.0/3.0)))
     y = (q2*b/2)**2
     
+    #Dark matter spin factor
     jx = 0.5
     jfac = jx*(jx+1.0)
     
@@ -454,77 +215,43 @@ def dRdE_NREFT(E, m_A, m_x, cp, cn, target, vlag=230.0, sigmav=156.0, vesc=544.0
             R_S1D = jfac/3.0*eta*(c1[4]*c2[3] - c1[7]*c2[8])
             rate += R_S1D*np.vectorize(WS1D.calcws1d)(tau2, tau1, y, target)
 
-    # conv =  (1.98e-14*1.0/(m_x+amu*1e-6))**2/(16.0*pi)
-    conv = (0.3/2./np.pi/m_x)*1.69612985e14 # 1 GeV^-4 * cm^-3 * km^-1 * s * c^6 * hbar^2 to keV^-1 kg^-1 day^-1
+    conv = (rho0/2./np.pi/m_x)*1.69612985e14 # 1 GeV^-4 * cm^-3 * km^-1 * s * c^6 * hbar^2 to keV^-1 kg^-1 day^-1
 
     rate = np.clip(rate, 0, 1e30)
+    return (4*np.pi/(2*(J_list[target_list == target])+1))*rate*conv
 
-    return rate*conv
 
 #--------------------------------------------------------
-# Differential recoil rate in NREFT framework
-# Calculates the contribution from the interference of operators
-# i and j (with couplings cp and cn to protons and neutrons)
-def dRdE_NREFT_sum(E, m_A, m_x, cp, cn, i, j, target, eta, meta, q1):
-    #eta = calcEta(vmin(E, m_A, m_x))
-    #meta = calcMEta(vmin(E, m_A, m_x))
-    amu = 931.5*1000 # keV
-    #q1 = np.sqrt(2*m_A*amu*E)
-    qr = q1/amu
+# Number of events in NREFT
+# See also dRdE_NREFT for more details
+# Optionally, you can pass a function 'eff' defining the detector efficiency
+def Nevents_NREFT(E_min, E_max, A, m_x, cp, cn, target, eff = None,vlag=232.0, sigmav=156.0, vesc=544.0):
+    if (eff == None):
+        eff = lambda x: 1
+    integ = lambda x: eff(x)*dRdE_NREFT(x, A, m_x, cp, cn, target, vlag, sigmav, vesc)
     
-    # Required for form factors
-    q2 = q1*(1e-12/1.97e-7)
-    b = np.sqrt(41.467/(45*m_A**(-1.0/3.0) - 25*m_A**(-2.0/3.0)))
-    y = (q2*b/2)**2
-    
-    
-    #Write down all the form factors, for ease of typing!
-    FF_M = lambda x: calcWM(x, target=target, cp=cp, cn=cn)
-    FF_Sigma1 = lambda x: calcWS1(x, target=target, cp=cp, cn=cn)
-    FF_Sigma2 = lambda x: calcWS2(x, target=target, cp=cp, cn=cn)
-    FF_Delta = lambda x: calcWD(x, target=target, cp=cp, cn=cn)
-    FF_Phi1 = lambda x: calcWP1(x, target=target, cp=cp, cn=cn)
-    FF_Phi2 = lambda x: calcWP2(x, target=target, cp=cp, cn=cn)
-    FF_MPhi2 = lambda x: calcWMP2(x, target=target, cp=cp, cn=cn)
-    FF_Sigma1Delta = lambda x: calcWS1D(x, target=target, cp=cp, cn=cn)
+    return quad(integ, E_min, E_max)[0]
 
-    #FF_SD = lambda x: calcFF_SD(x, m_A, FFcoeffs, cp, cn)
 
-    rate = 0.0
 
-    #Non-interference terms!
-    if (i == j):
-        #Contact interactions
-
-        if (i == 1): #STANDARD SPIN-INDEPENDENT
-            rate = eta*FF_M(y)
-        elif (i == 2):
-            rate = 0
-        elif (i == 3):
-            A = meta*FF_Sigma1(y)
-            B = 0.25*(qr**2)*eta*FF_Phi2(y)
-            rate = (qr**2)*(A+B)
-        elif (i == 4): #STANDARD SPIN-DEPENDENT
-            rate = eta*(1.0/16.0)*(FF_Sigma1(y) + FF_Sigma2(y))
-            #rate = (1.0/16.0)*eta*FF_SD(E)*(1.0/4.0)
-        elif (i == 5):
+#---------------------------------------------------------
+#Code for the long range interactions (which we're not using...)
+"""
+        #Long-range interactions
+        elif (i == 101):
+            rate =  (qr**-4)*eta*FF_M(y)
+        elif (i == 104):
+            #rate =  (qr**-4)*(1.0/16.0)*eta*FF_SD(E)
+            rate = 0    #ZERO BY DEFINITION!
+        elif (i == 105):
             A = meta*FF_M(y)
             B = eta*(qr**2)*FF_Delta(y)
-            rate = 0.25*(qr**2)*(A+B)
-        elif (i == 6):
-            rate = (1.0/16.0)*(qr**4)*eta*FF_Sigma2(y)
-        elif (i == 7):
-            rate =  meta*FF_Sigma1(y)
-        elif (i == 8):
-            A = meta*FF_M(y)
-            B = eta*(qr**2)*FF_Delta(y)
-            rate =  0.25*(A+B)
-        elif (i == 9):
-            rate =  (1.0/16.0)*eta*(qr**2)*FF_Sigma1(y)
-        elif (i == 10):
-            rate =  0.25*eta*(qr**2)*FF_Sigma2(y)
-        elif (i == 11):
-            rate =  0.25*eta*(qr**2)*FF_M(y)
+            rate =  0.25*(qr**-2.0)*(A+B)
+        elif (i == 106):
+            rate =  (1.0/16.0)*eta*FF_Sigma2(y)
+        elif (i == 111):
+            rate =  0.25*eta*(qr**-2)*FF_M(y)
+
 
     #Interference terms
     else:
@@ -536,71 +263,9 @@ def dRdE_NREFT_sum(E, m_A, m_x, cp, cn, i, j, target, eta, meta, q1):
             rate = (1.0/16.0)*(qr**2)*eta*FF_Sigma2(y)
         elif ((i == 8 and j == 9) or (i == 9 and j ==8)):
             rate =  (1.0/8.0)*(qr**2)*eta*FF_Sigma1Delta(y)
+        elif ((i == 104 and j == 105) or (i == 105 and j == 104)):
+            rate =  -(1.0/8.0)*eta*FF_Sigma1Delta(y)
+        elif ((i == 104) and (j == 106) or (i == 106 and j == 104)):
+            rate =  (1.0/16.0)*eta*FF_Sigma2(y)
 
-
-
-    # We need to do this, because the polynomial form factors
-    # aren't valid up to arbitrarily high momenta...
-    #if (rate < 0):
-    #    return 0.0
-    #else:
-    #    return rate
-    return rate
-    
-#--------------------------------------------------------
-# Calculate differential rate in NREFT from two vectors of couplings:
-# cp_list and cn_list should be the (dimensional) couplings of the DM
-# to protons and neutrons for operators 1-11. That is, cp_list should
-# be a vector with 11 elements.
-# New version with Form Factors
-def dRdE_NREFT_old(E, m_A, m_x, cp_list, cn_list, target, vlag=230.0, sigmav=156.0,vesc=544.0):
-    #Sum over all the contributions from different operators
-    
-    eta = calcEta(vmin(E, m_A, m_x),vlag=vlag, sigmav=sigmav, vesc=vesc)
-    meta = calcMEta(vmin(E, m_A, m_x),vlag=vlag, sigmav=sigmav, vesc=vesc)
-    amu = 931.5*1000
-    q1 = np.sqrt(2*m_A*amu*E)
-    
-    
-    dRdE_tot = 0.0*E
-    for i in range(11):
-        dRdE_tot += dRdE_NREFT_sum(E, m_A, m_x, cp_list[i], cn_list[i], i+1, i+1, target, eta, meta, q1)
-    
-    i0 = [1,4,4,8]
-    j0 = [3,5,6,9]
-    
-    #Need to double-check this...
-    for i,j in zip(i0,j0):
-        dRdE_tot += dRdE_NREFT_sum(E, m_A, m_x, cp_list[i-1], cn_list[j-1], i, j, target, eta, meta, q1)
-        dRdE_tot += dRdE_NREFT_sum(E, m_A, m_x, cp_list[j-1], cn_list[i-1], i, j, target, eta, meta, q1)
-        
-    # conv =  (1.98e-14*1.0/(m_x+amu*1e-6))**2/(16.0*pi)
-    conv = (0.3/2./np.pi/m_x)*1.69612985e14 # 1 GeV^-4 * cm^-3 * km^-1 * s * c^6 * hbar^2 to keV^-1 kg^-1 day^-1
-    
-    # We need to do this, because the polynomial form factors
-    # aren't valid up to arbitrarily high momenta...
-    #dRdE_tot = np.clip(dRdE_tot, 0, 1e30)
-    
-    return dRdE_tot*conv
-
-
-#--------------------------------------------------------
-# Number of events in NREFT
-# See also dRdE_NREFT for more details
-# Optionally, you can pass a function 'eff' defining the detector efficiency
-def Nevents_NREFT(E_min, E_max, m_A, mx, cp_list, cn_list, target):
-    if (eff == None):
-        eff = lambda x: 1
-    integ = lambda x: eff(x)*dRdE_NREFT(x, m_A, mx, cp_list, cn_list, target)
-    
-    return quad(integ, E_min, E_max)[0]
-    
-    
-#---------------------------------------------------------
-# Code for loading in the FormFactor coefficients
-def LoadFormFactors(root, A, Z):
-    print(" Loading Form Factor for (A, Z) = (" + str(int(A)) + ", " + str(int(Z)) + ")...")
-    return np.loadtxt(root +'/FormFactors_Z='\
-                 + str(int(Z)) + '_A=' + str(int(A)) +'.dat')
-
-
+"""

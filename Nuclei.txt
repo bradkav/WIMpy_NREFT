@@ -1,0 +1,3 @@
+#List of nuclei
+#Columns: ID, nuclear spin [J], atomic mass
+Xe131	0.5	131
