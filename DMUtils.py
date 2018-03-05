@@ -20,12 +20,11 @@ from Wfunctions import WD, WM, WMP2, WP1, WP2, WS1, WS2, WS1D
 
 #Load in the list of nuclear spins and atomic masses
 target_list = np.loadtxt("Nuclei.txt", usecols=(0,), dtype='string')
-J_list = np.loadtxt("Nuclei.txt", usecols=(1,))
-A_list = np.loadtxt("Nuclei.txt", usecols=(2,))
+A_list = np.loadtxt("Nuclei.txt", usecols=(1,))
+J_list = np.loadtxt("Nuclei.txt", usecols=(2,))
 
-#TO-DO:
-#   - Implement some kind of 'dict' or something here for the target lists
-#   - Replace 'A' as a parameter in the functions, by looking up in A_list
+Jvals = dict(zip(target_list, J_list))
+Avals = dict(zip(target_list, A_list))
 
 
 #----------------------------------------------------
@@ -85,9 +84,10 @@ def reduced_m(A, m_x):
     
 # A helper function for calculating the prefactors to dRdE
 def rate_prefactor(m_x):
-    rho0 = 0.3
-    mu = 1.78e-27*reduced_m(1.0, m_x)
-    return 1.38413e-12*rho0/(m_x*mu*mu)
+    #mu = 1.78e-27*reduced_m(1.0, m_x)
+    #return 1.38413e-12*rho0/(m_x*mu*mu)
+    mu = reduced_m(1.0, m_x)
+    return 4.34e41*rho0/(2.0*m_x*mu*mu)
     
 #0.197 GeV  = 1e13/cm
 # -> GeV^-1 = 1.97e-14 cm
@@ -160,7 +160,8 @@ def Nevents_standard(E_min, E_max, N_p, N_n, m_x, sig, eff=None,vlag=232.0, sigm
 # Differential recoil rate in NREFT framework
 # Calculates the contribution from the interference of operators
 # i and j (with couplings cp and cn to protons and neutrons)
-def dRdE_NREFT(E, A, m_x, cp, cn, target, vlag=232.0, sigmav=156.0, vesc=544.0):
+def dRdE_NREFT(E, m_x, cp, cn, target, vlag=232.0, sigmav=156.0, vesc=544.0):   
+    A = Avals[target]
     
     eta = calcEta(vmin(E, A, m_x),vlag=vlag, sigmav=sigmav, vesc=vesc)
     meta = calcMEta(vmin(E, A, m_x),vlag=vlag, sigmav=sigmav, vesc=vesc)
@@ -218,17 +219,17 @@ def dRdE_NREFT(E, A, m_x, cp, cn, target, vlag=232.0, sigmav=156.0, vesc=544.0):
     conv = (rho0/2./np.pi/m_x)*1.69612985e14 # 1 GeV^-4 * cm^-3 * km^-1 * s * c^6 * hbar^2 to keV^-1 kg^-1 day^-1
 
     rate = np.clip(rate, 0, 1e30)
-    return (4*np.pi/(2*(J_list[target_list == target])+1))*rate*conv
+    return (4*np.pi/(2*Jvals[target]+1))*rate*conv
 
 
 #--------------------------------------------------------
 # Number of events in NREFT
 # See also dRdE_NREFT for more details
 # Optionally, you can pass a function 'eff' defining the detector efficiency
-def Nevents_NREFT(E_min, E_max, A, m_x, cp, cn, target, eff = None,vlag=232.0, sigmav=156.0, vesc=544.0):
+def Nevents_NREFT(E_min, E_max, m_x, cp, cn, target, eff = None,vlag=232.0, sigmav=156.0, vesc=544.0):
     if (eff == None):
         eff = lambda x: 1
-    integ = lambda x: eff(x)*dRdE_NREFT(x, A, m_x, cp, cn, target, vlag, sigmav, vesc)
+    integ = lambda x: eff(x)*dRdE_NREFT(x, m_x, cp, cn, target, vlag, sigmav, vesc)
     
     return quad(integ, E_min, E_max)[0]
 

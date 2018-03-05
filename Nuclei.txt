@@ -1,3 +1,4 @@
 #List of nuclei
 #Columns: ID, nuclear spin [J], atomic mass
-Xe131	0.5	131
+Xe131	131	1.5
+Ar40	40	0.0
