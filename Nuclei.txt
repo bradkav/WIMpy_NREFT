@@ -1,4 +1,18 @@
 #List of nuclei
-#Columns: ID, nuclear spin [J], atomic mass
-Xe131	131	1.5
-Ar40	40	0.0
+#Columns: ID, atomic mass, nuclear spin [J], mass fraction
+Xe128	128	0.0	0.0191
+Xe129	129	0.5	0.264
+Xe130	130	0.0	0.0407
+Xe131	131	1.5	0.212
+Xe132	132	0.0	0.269
+Xe134	134	0.0	0.104
+Xe136	136	0.0	0.0886
+Ar40	40	0.0	1.0
+C12	12	0.0	1.0
+Ge70	70	0.0	0.2038
+Ge72	72	0.0	0.2731
+Ge73	73	4.5	0.0776
+Ge74	74	0.0	0.3672
+Ge76	76	0.0	0.0783
+Fluorine	19	0.5	1.0
+Iodine	127	2.5	1.0
