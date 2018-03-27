@@ -171,7 +171,7 @@ def He3(i,j,y):
     return WM    
     
 def H(i,j,y):
-    WM=0.039788735772973836!/exp(2.*y)   
+    WM=0.039788735772973836#/exp(2.*y)   
     return WM 
 
 def Xe128(i,j,y):
@@ -200,8 +200,6 @@ def Xe128(i,j,y):
             0.000819043614177327*y**9 - 3.0162624004726243e-6*y**10)
             /exp(2.*y)
     return WM
-
-############################ Made it to here
 
 def Xe129(i,j,y):
     if i == 0 and j == 0:  
@@ -540,3 +538,35 @@ def Fluorine(i,j,y):
             - 0.02128238161605433*y**4)/exp(2.*y)
     return WM
 
+dispatchtable = {}
+dispatchtable['Ni59'] = Ni59
+dispatchtable['Ni58'] = Ni58
+dispatchtable['Fe56'] = Fe56
+dispatchtable['Ca40'] = Ca40
+dispatchtable['Ar40'] = Ar40
+dispatchtable['S32'] = S32
+dispatchtable['Si28'] = Si28
+dispatchtable['Al27'] = Al27
+dispatchtable['Mg24'] = Mg24
+dispatchtable['Ne20'] = Ne20
+dispatchtable['O16'] = O16
+dispatchtable['N14'] = N14
+dispatchtable['C12'] = C12
+dispatchtable['He4'] = He4
+dispatchtable['He3'] = He3
+dispatchtable['H'] = H
+dispatchtable['Xe128'] = Xe128
+dispatchtable['Xe129'] = Xe129
+dispatchtable['Xe130'] = Xe130
+dispatchtable['Xe131'] = Xe131
+dispatchtable['Xe132'] = Xe132
+dispatchtable['Xe134'] = Xe134
+dispatchtable['Xe136'] = Xe136
+dispatchtable['Ge70'] = Ge70
+dispatchtable['Ge72'] = Ge72
+dispatchtable['Ge73'] = Ge73
+dispatchtable['Ge74'] = Ge74
+dispatchtable['Ge76'] = Ge76
+dispatchtable['Na23'] = Na23
+dispatchtable['Iodine'] = Iodine
+dispatchtable['Fluorine'] = Fluorine
