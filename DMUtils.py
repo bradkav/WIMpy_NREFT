@@ -224,7 +224,34 @@ def dRdE_NREFT(E, m_x, cp, cn, target, vlag=232.0, sigmav=156.0, vesc=544.0):
 
 #def dRdE_magnetic(E, m_x, mu_x, target, vlag=232.0, sigmav=156.0, vesc=544.0):
 
+
+
+
+
 def dRdE_millicharge(E, m_x, epsilon, target, vlag=232.0, sigmav=156.0, vesc=544.0):
+    """Return recoil rate for millicharged Dark Matter.
+    Parameters
+    ----------
+    * `E` [array]:
+      Recoil energies.
+    * `m_x` [float]:
+      Dark Matter mass in GeV.
+    * `epsilon` [float]:
+      Dark Matter charge (in units of the electron charge).
+    * `target` [string]:
+      Recoil target.
+    * `vlag` [float] (optional):
+      Average lag speed of the lab in km/s. Default is 232.
+    * `sigmav` [float] (optional):
+      Velocity dispersion of the DM halo in km/s. Default is 156.
+    * `vesc` [float] (optional):
+      Escape speed in the Galactic frame in km/s. Default is 544.
+    Returns
+    -------
+    * `rate` [array like]:
+      Recoil rate in units of events/keV/kg/day.
+    """
+    
     A = Avals[target]
     
     eta = calcEta(vmin(E, A, m_x),vlag=vlag, sigmav=sigmav, vesc=vesc)
