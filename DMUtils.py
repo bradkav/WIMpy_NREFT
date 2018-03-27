@@ -17,7 +17,6 @@ from scipy.special import erf
 #Nuclear structure functions
 from Wfunctions import WD, WM, WMP2, WP1, WP2, WS1, WS2, WS1D
 
-
 #Load in the list of nuclear spins and atomic masses
 target_list = np.loadtxt("Nuclei.txt", usecols=(0,), dtype='string')
 A_list = np.loadtxt("Nuclei.txt", usecols=(1,))
@@ -182,7 +181,10 @@ def dRdE_NREFT(E, m_x, cp, cn, target, vlag=232.0, sigmav=156.0, vesc=544.0):
     
     rate = E*0.0
     
-    c = [cp + cn, cp - cn]
+    
+    c_sum = [cp[i] + cn[i] for i in range(11)]
+    c_diff = [cp[i] - cn[i] for i in range(11)]
+    c = [c_sum, c_diff]
     
     for tau1 in [0,1]:
         for tau2 in [0,1]:
@@ -199,7 +201,7 @@ def dRdE_NREFT(E, m_x, cp, cn, target, vlag=232.0, sigmav=156.0, vesc=544.0):
     
             #Watch out, this one is the wrong way round...
             R_P2M = eta*c1[2]*c2[0]
-            rate += R_P2M*np.vectorize(WMP2.calcwmp2)(tau2, tau1, y, target)
+            rate += R_P2M*np.vectorize(WMP2.calcwmp2)(tau1, tau2, y, target)
     
             R_S2 = eta*c1[9]*c2[9]*0.25*qr**2 + eta*jfac/12.0*(c1[3]*c2[3] + \
                         qr**2*(c1[3]*c2[5] + c1[5]*c2[3]) + qr**4*c1[5]*c2[5])
@@ -214,7 +216,7 @@ def dRdE_NREFT(E, m_x, cp, cn, target, vlag=232.0, sigmav=156.0, vesc=544.0):
     
             #This one might be flipped too
             R_S1D = jfac/3.0*eta*(c1[4]*c2[3] - c1[7]*c2[8])
-            rate += R_S1D*np.vectorize(WS1D.calcws1d)(tau2, tau1, y, target)
+            rate += R_S1D*np.vectorize(WS1D.calcws1d)(tau1, tau2, y, target)
 
     conv = (rho0/2./np.pi/m_x)*1.69612985e14 # 1 GeV^-4 * cm^-3 * km^-1 * s * c^6 * hbar^2 to keV^-1 kg^-1 day^-1
 
@@ -222,10 +224,111 @@ def dRdE_NREFT(E, m_x, cp, cn, target, vlag=232.0, sigmav=156.0, vesc=544.0):
     return (4*np.pi/(2*Jvals[target]+1))*rate*conv
 
 
-#def dRdE_magnetic(E, m_x, mu_x, target, vlag=232.0, sigmav=156.0, vesc=544.0):
+def dRdE_anapole(E, m_x, c_A, target, vlag=232.0, sigmav=156.0, vesc=544.0):
+    """Return recoil rate for anapole Dark Matter.
+    Parameters
+    ----------
+    * `E` [array]:
+      Recoil energies.
+    * `m_x` [float]:
+      Dark Matter mass in GeV.
+    * `c_A` [float]:
+      Dark Matter anapole moment (in GeV^-2).
+    * `target` [string]:
+      Recoil target.
+    * `vlag` [float] (optional):
+      Average lag speed of the lab in km/s. Default is 232.
+    * `sigmav` [float] (optional):
+      Velocity dispersion of the DM halo in km/s. Default is 156.
+    * `vesc` [float] (optional):
+      Escape speed in the Galactic frame in km/s. Default is 544.
+    Returns
+    -------
+    * `rate` [array like]:
+      Recoil rate in units of events/keV/kg/day.
+    """
+    
+    #See https://arxiv.org/pdf/1401.4508.pdf
+    
+    alpha = 0.007297
+    e = np.sqrt(4*np.pi*alpha)
+    
+    cn = np.zeros(11)
+    cp = np.zeros(11)
+    
+    #Operator 8
+    cp[7] = -2.0*e*c_A
+    
+    #Operator 9
+    cp[8] = -2.0*e*c_A
+    
+    return dRdE_NREFT(E, m_x, cp, cn, target, vlag, sigmav, vesc)
+    
 
+def dRdE_magnetic(E, m_x, mu_x, target, vlag=232.0, sigmav=156.0, vesc=544.0):
+    """Return recoil rate for magnetic dipole Dark Matter.
+    Parameters
+    ----------
+    * `E` [array]:
+      Recoil energies.
+    * `m_x` [float]:
+      Dark Matter mass in GeV.
+    * `mu_x` [float]:
+      Dark Matter magnetic dipole (in units of the Bohr Magneton).
+    * `target` [string]:
+      Recoil target.
+    * `vlag` [float] (optional):
+      Average lag speed of the lab in km/s. Default is 232.
+    * `sigmav` [float] (optional):
+      Velocity dispersion of the DM halo in km/s. Default is 156.
+    * `vesc` [float] (optional):
+      Escape speed in the Galactic frame in km/s. Default is 544.
+    Returns
+    -------
+    * `rate` [array like]:
+      Recoil rate in units of events/keV/kg/day.
+    """
+    
+    A = Avals[target]
+    
+    #See Eq. 62 of https://arxiv.org/pdf/1307.5955.pdf, but note
+    #that we're using some different normalisations for the operators
+    #so there are some extra factors of m_x and m_p lurking around...
+    
+    amu = 931.5e3 # keV
+    q1 = np.sqrt(2*A*amu*E) #Recoil momentum in keV
+    
+    alpha = 0.007297
+    e = np.sqrt(4*np.pi*alpha)
+    m_p = 0.9315
+    
+    #Proton and neutron g-factors
+    gp = 5.59
+    gn = -3.83
+    
+    #Bohr Magneton
+    #Tesla   = 194.6*eV**2           # Tesla in natural units (with e = sqrt(4 pi alpha))
+    #muB     = 5.7883818e-5*eV/Tesla # Bohr magneton
+    mu_B = 297.45 #GeV^-1 (in natural units (with e = sqrt(4 pi alpha)))
 
+    cp = [E*0.0 for i in range(11)]
+    cn = [E*0.0 for i in range(11)]
+    
+    #Operator 1
+    cp[0] = e*(mu_x*mu_B)/(2.0*m_x)
+    
+    #Operator 5
+    cp[4] = 2*e*(mu_x*mu_B)*m_p/(q1*1e-6)**2
+    
+    #Operator 4
+    cp[3] = gp*e*(mu_x*mu_B)/m_p
+    cn[3] = gn*e*(mu_x*mu_B)/m_p
+    
+    #Operator 6
+    cp[5] = -gp*e*(mu_x*mu_B)*m_p/(q1*1e-6)**2
+    cn[5] = -gn*e*(mu_x*mu_B)*m_p/(q1*1e-6)**2
 
+    return dRdE_NREFT(E, m_x, cp, cn, target, vlag, sigmav, vesc)
 
 
 def dRdE_millicharge(E, m_x, epsilon, target, vlag=232.0, sigmav=156.0, vesc=544.0):
@@ -284,7 +387,7 @@ def dRdE_millicharge(E, m_x, epsilon, target, vlag=232.0, sigmav=156.0, vesc=544
             c1 = c[tau1]
             c2 = c[tau2]
     
-            R_M = c1[0]*c2[0]*eta/(q1/1e6)**4
+            R_M = c1*c2*eta/(q1*1e-6)**4
             rate += R_M*np.vectorize(WM.calcwm)(tau1, tau2, y, target)
     
     conv = (rho0/2./np.pi/m_x)*1.69612985e14 # 1 GeV^-4 * cm^-3 * km^-1 * s * c^6 * hbar^2 to keV^-1 kg^-1 day^-1
