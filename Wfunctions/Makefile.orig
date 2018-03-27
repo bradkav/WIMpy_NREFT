@@ -7,4 +7,4 @@ clean:
 	rm $(objects)
 
 %.so: %.f
-	python2 -m numpy.f2py -c $^ -m $(basename $@) 
+	f2py -c $^ -m $(basename $@) 
