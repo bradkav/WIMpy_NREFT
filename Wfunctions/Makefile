@@ -7,4 +7,4 @@ clean:
 	rm $(objects)
 
 %.so: %.f
-	f2py -c $^ -m $(basename $@) 
+	f2py -c -L/anaconda/lib/ -lgfortran $^ -m $(basename $@) 
