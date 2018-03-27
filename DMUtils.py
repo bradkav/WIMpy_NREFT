@@ -222,6 +222,76 @@ def dRdE_NREFT(E, m_x, cp, cn, target, vlag=232.0, sigmav=156.0, vesc=544.0):
     return (4*np.pi/(2*Jvals[target]+1))*rate*conv
 
 
+#def dRdE_magnetic(E, m_x, mu_x, target, vlag=232.0, sigmav=156.0, vesc=544.0):
+
+
+
+
+
+def dRdE_millicharge(E, m_x, epsilon, target, vlag=232.0, sigmav=156.0, vesc=544.0):
+    """Return recoil rate for millicharged Dark Matter.
+    Parameters
+    ----------
+    * `E` [array]:
+      Recoil energies.
+    * `m_x` [float]:
+      Dark Matter mass in GeV.
+    * `epsilon` [float]:
+      Dark Matter charge (in units of the electron charge).
+    * `target` [string]:
+      Recoil target.
+    * `vlag` [float] (optional):
+      Average lag speed of the lab in km/s. Default is 232.
+    * `sigmav` [float] (optional):
+      Velocity dispersion of the DM halo in km/s. Default is 156.
+    * `vesc` [float] (optional):
+      Escape speed in the Galactic frame in km/s. Default is 544.
+    Returns
+    -------
+    * `rate` [array like]:
+      Recoil rate in units of events/keV/kg/day.
+    """
+    
+    A = Avals[target]
+    
+    eta = calcEta(vmin(E, A, m_x),vlag=vlag, sigmav=sigmav, vesc=vesc)
+    amu = 931.5e3 # keV
+    q1 = np.sqrt(2*A*amu*E)
+
+    #Recoil momentum over nucleon mass
+    qr = q1/amu
+    
+    # Required for form factors
+    q2 = q1*(1e-12/1.97e-7)
+    b = np.sqrt(41.467/(45*A**(-1.0/3.0) - 25*A**(-2.0/3.0)))
+    y = (q2*b/2)**2
+    
+    rate = E*0.0
+    
+    #Calculate the coupling to protons
+    alpha = 0.007297
+    e = np.sqrt(4*np.pi*alpha)
+    m_p = 0.9315
+    
+    cn = 0
+    cp = epsilon*e**2
+    
+    c = [cp + cn, cp - cn]
+    
+    for tau1 in [0,1]:
+        for tau2 in [0,1]:
+            
+            c1 = c[tau1]
+            c2 = c[tau2]
+    
+            R_M = c1[0]*c2[0]*eta/(q1/1e6)**4
+            rate += R_M*np.vectorize(WM.calcwm)(tau1, tau2, y, target)
+    
+    conv = (rho0/2./np.pi/m_x)*1.69612985e14 # 1 GeV^-4 * cm^-3 * km^-1 * s * c^6 * hbar^2 to keV^-1 kg^-1 day^-1
+
+    rate = np.clip(rate, 0, 1e30)
+    return (4*np.pi/(2*Jvals[target]+1))*rate*conv
+    
 #--------------------------------------------------------
 # Number of events in NREFT
 # See also dRdE_NREFT for more details
