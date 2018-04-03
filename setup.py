@@ -8,6 +8,6 @@ setup(
     author_email='b.j.kavanagh@uva.nl',
     url = 'https://github.com/bradkav/WIMpy_NREFT',
     packages=['WIMpy'],
-    package_data={'WIMpy': [] },
-    long_description=open('README.md').read(),
+    package_data={'WIMpy': ['nuclei.txt'] },
+    # data_files=['nuclei.txt']
 )

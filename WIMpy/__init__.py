@@ -1,3 +1,9 @@
-from WIMpy.DMUtils import *
-from Wfunctions import WD, WM, WMP2, WP1, WP2, WS1, WS2, WS1D
-# __all__ = ["Swordfish"]
+import WIMpy.DMUtils
+import WIMpy.WD
+import WIMpy.WM
+import WIMpy.WMP2
+import WIMpy.WP1
+import WIMpy.WP2
+import WIMpy.WS1
+import WIMpy.WS2
+import WIMpy.WS1D

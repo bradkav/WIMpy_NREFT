@@ -13,14 +13,15 @@ from scipy.integrate import trapz, cumtrapz, quad
 from scipy.interpolate import interp1d
 from numpy.random import rand
 from scipy.special import erf
+import os
 
 #Nuclear structure functions
-from Wfunctions import WD, WM, WMP2, WP1, WP2, WS1, WS2, WS1D
+import WD, WM, WMP2, WP1, WP2, WS1, WS2, WS1D
 
 #Load in the list of nuclear spins and atomic masses
-target_list = np.loadtxt("Nuclei.txt", usecols=(0,), dtype='string')
-A_list = np.loadtxt("Nuclei.txt", usecols=(1,))
-J_list = np.loadtxt("Nuclei.txt", usecols=(2,))
+target_list = np.loadtxt(os.path.dirname(os.path.realpath(__file__)) + "/Nuclei.txt", usecols=(0,), dtype='string')
+A_list = np.loadtxt(os.path.dirname(os.path.realpath(__file__)) + "/Nuclei.txt", usecols=(1,))
+J_list = np.loadtxt(os.path.dirname(os.path.realpath(__file__)) + "/Nuclei.txt", usecols=(2,))
 
 Jvals = dict(zip(target_list, J_list))
 Avals = dict(zip(target_list, A_list))
