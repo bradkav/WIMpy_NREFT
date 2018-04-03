@@ -1,7 +1,7 @@
 from __future__ import division
 import numpy as np
 
-def calcWP2(i, j, y, isotope):
+def calcwp2(i, j, y, isotope):
    if isotope not in dispatchtable.keys():
        wp2 = 0.
    else:

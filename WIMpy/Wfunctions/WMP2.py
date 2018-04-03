@@ -1,7 +1,7 @@
 from __future__ import division
 import numpy as np
 
-def calcWMP2(i, j, y, isotope):
+def calcwmp2(i, j, y, isotope):
    if isotope not in dispatchtable.keys():
        wmp2 = 0.
    else:
