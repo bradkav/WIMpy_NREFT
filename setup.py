@@ -1,7 +1,7 @@
 from setuptools import setup
 
 setup(
-    name='swordfish',
+    name='WIMpy',
     version='1.0.0',
     description='Calculates the DM direct detection signal according to the NREFT',
     author='Bradley Kavanagh',
