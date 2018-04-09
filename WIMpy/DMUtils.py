@@ -27,7 +27,7 @@ import WIMpy.WS2 as WS2
 import WIMpy.WS1D as WS1D
 
 #Load in the list of nuclear spins and atomic masses
-target_list = np.loadtxt(os.path.dirname(os.path.realpath(__file__)) + "/Nuclei.txt", usecols=(0,), dtype='str')
+target_list = np.loadtxt(os.path.dirname(os.path.realpath(__file__)) + "/Nuclei.txt", usecols=(0,), dtype=bytes).astype(str)
 A_list = np.loadtxt(os.path.dirname(os.path.realpath(__file__)) + "/Nuclei.txt", usecols=(1,))
 J_list = np.loadtxt(os.path.dirname(os.path.realpath(__file__)) + "/Nuclei.txt", usecols=(2,))
 
