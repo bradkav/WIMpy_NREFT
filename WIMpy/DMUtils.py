@@ -16,7 +16,15 @@ from scipy.special import erf
 import os
 
 #Nuclear structure functions
-import WD, WM, WMP2, WP1, WP2, WS1, WS2, WS1D
+# import WD, WM, WMP2, WP1, WP2, WS1, WS2, WS1D
+import WIMpy.WD
+import WIMpy.WM
+import WIMpy.WMP2
+import WIMpy.WP1
+import WIMpy.WP2
+import WIMpy.WS1
+import WIMpy.WS2
+import WIMpy.WS1D
 
 #Load in the list of nuclear spins and atomic masses
 target_list = np.loadtxt(os.path.dirname(os.path.realpath(__file__)) + "/Nuclei.txt", usecols=(0,), dtype='string')
