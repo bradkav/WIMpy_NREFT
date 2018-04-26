@@ -8,11 +8,27 @@ The code currently supports operators <img src="https://rawgit.com/bradkav/WIMpy
 
 For questions, comments or bug reports, please contact Bradley J Kavanagh (bradkav@gmail.com).
 
+### Installation
+
+You can install `WIMpy_NREFT` using `pip`:
+
+```
+pip install git+https://github.com/bradkav/WIMpy_NREFT
+```
+
+Requires python3 as well as [NumPy](http://www.numpy.org) and [SciPy](https://www.scipy.org).
+
 ### Usage
 
-Requires python 2.7, as well as [NumPy](http://www.numpy.org) and [SciPy](https://www.scipy.org).
+Most of the relevant routines are contained in the module `DMUtils.py`. Load with
 
-To get started, check out the [`NREFT_example.ipynb`](NREFT_example.ipynb), which contains examples of how to use the different parts of the code. The same code is also available as a pure python script in `NREFT_example.py`.
+```python
+from WIMpy import DMUtils as DMU
+```
+
+For how to use the routines, there are a number of examples in the `Examples/` folder:
+-  [`NREFT_example.ipynb`](Examples/NREFT_example.ipynb), which contains examples of how to use the different parts of the code, including calculating a range of spectra.  
+- [`Spectra.ipynb`](Examples/Spectra.ipynb), which can be used to generate plots of spectra for all NREFT operators and a range of experiments.
 
 More detailed documentation should be coming soon...
 
