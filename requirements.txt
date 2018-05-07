@@ -1,2 +1,2 @@
-tqdm
-WIMpy
+tqdm==4.19.9
+WIMpy==1.0.0
