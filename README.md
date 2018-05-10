@@ -6,6 +6,8 @@ The `WIMpy_NREFT` code allows you to calculate Dark Matter-Nucleus scattering ra
 
 The code currently supports operators <img src="https://rawgit.com/bradkav/WIMpy_NREFT/master/svgs/2330706abb8aba7916b511ca5afa9e62.svg?invert_in_darkmode" align=middle width=19.56603pt height=22.38192pt/> to <img src="https://rawgit.com/bradkav/WIMpy_NREFT/master/svgs/917244ca615745a80feccbe760feb728.svg?invert_in_darkmode" align=middle width=26.09409pt height=22.38192pt/>, as well as millicharged and magnetic dipole Dark Matter. The code can be used to generate spectra for Xenon, Argon, Carbon, Germanium, Iodine and Fluorine targets.
 
+**Authors:** Bradley J Kavanagh, Tom D P Edwards.
+
 For questions, comments or bug reports, please contact Bradley J Kavanagh (bradkav@gmail.com).
 
 ### Installation
