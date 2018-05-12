@@ -8,7 +8,7 @@ setup(
     author_email='b.j.kavanagh@uva.nl',
     url = 'https://github.com/bradkav/WIMpy_NREFT',
     packages=['WIMpy'],
-    #include_package_data=True,
+    include_package_data=True,
     package_data={'WIMpy': ['nuclei.txt'], }
     #data_files=['nuclei.txt'],
     #data_files=[('',['WIMpy/nuclei.txt'])]
