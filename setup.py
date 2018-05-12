@@ -9,6 +9,6 @@ setup(
     url = 'https://github.com/bradkav/WIMpy_NREFT',
     packages=['WIMpy'],
     package_data={'WIMpy': ['nuclei.txt'] },
-    data_files=['nuclei.txt']
+    data_files=['nuclei.txt'],
     #data_files=[('',['nuclei.txt'])]
 )
