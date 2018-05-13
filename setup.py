@@ -11,5 +11,5 @@ setup(
     include_package_data=True,
     #package_data={'WIMpy': ['nuclei.txt'], }
     #data_files=['nuclei.txt'],
-    data_files=[('',['nuclei.txt'])]
+    data_files=[('WIMpy',['nuclei.txt'])]
 )
