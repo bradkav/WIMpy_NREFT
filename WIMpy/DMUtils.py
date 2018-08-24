@@ -5,7 +5,7 @@
 #
 # Author: Bradley J Kavanagh
 # Email: bradkav@gmail.com
-# Last updated: 02/03/2018
+# Last updated: 26/07/2018
 
 import numpy as np
 from numpy import pi, cos, sin
@@ -25,6 +25,9 @@ import WIMpy.WP2 as WP2
 import WIMpy.WS1 as WS1
 import WIMpy.WS2 as WS2
 import WIMpy.WS1D as WS1D
+
+#Functions for calculating lab velocity as a function of time
+import LabFuncs
 
 #Load in the list of nuclear spins and atomic masses
 target_list = np.loadtxt(os.path.dirname(os.path.realpath(__file__)) + "/Nuclei.txt", usecols=(0,), dtype=bytes).astype(str)
@@ -70,11 +73,43 @@ def calcMEta(vmin, vlag=230.0, sigmav=156.0,vesc=544.0):
     aesc = vesc/v0
     aE = vlag/v0
     
+    N = 1.0/(erf(aesc) - np.sqrt(2.0/np.pi)*(vesc/sigmav)*np.exp(-0.5*(vesc/sigmav)**2))
+    
     A = v0*((aminus/(2*np.sqrt(pi)*aE) + pi**-0.5)*np.exp(-aminus**2) - (aplus/(2*np.sqrt(pi)*aE) - pi**-0.5)*np.exp(-aplus**2))   
     B = (v0/(4.0*aE))*(1+2.0*aE**2)*(erf(aplus) - erf(aminus))
     C = -(v0*pi**-0.5)*(2 + (1/(3.0*aE))*((amin + aesc - aminus)**3 - (amin + aesc - aplus)**3))*np.exp(-aesc**2)
     
-    return np.clip(A+B+C, 0, 1e10)/((3e5**2))
+    return (np.clip((A+B+C)*N - vmin**2*calcEta(vmin,vlag,sigmav,vesc), 0, 1e10))/((3e5**2))
+#NB: Corrected a minor (roughly factor of 2) error in calcMeta  - BJK 26/07/2018
+
+
+#---------------------------------------------------------
+# Radon transform (the equivalent of eta for directional detection)
+def calcRT(vmin, theta, vlag=230.0, sigmav=156.0,vesc=544.0):
+    v0 = np.sqrt(2.0)*sigmav
+    aesc = vesc/v0
+    amin = np.minimum(vmin - vlag*np.cos(theta),vmin*0.0 + vesc)/v0
+    
+    N = 1.0/(erf(aesc) - np.sqrt(2.0/np.pi)*(vesc/sigmav)*np.exp(-0.5*(vesc/sigmav)**2))
+    
+    A = np.exp(-amin**2) - np.exp(-aesc**2)
+    A *= N/(np.sqrt(2*np.pi*sigmav**2))
+    
+    return np.clip(A, 0, 1e10)
+
+#---------------------------------------------------------
+# Modified Radon transform (the equivalent of eta for directional detection)
+def calcMRT(vmin, theta, vlag=230.0, sigmav=156.0,vesc=544.0):
+    v0 = np.sqrt(2.0)*sigmav
+    aesc = vesc/v0
+    amin = np.minimum(vmin - vlag*np.cos(theta),vmin*0.0 + vesc)/v0
+    
+    N = 1.0/(erf(aesc) - np.sqrt(2.0/np.pi)*(vesc/sigmav)*np.exp(-0.5*(vesc/sigmav)**2))
+    
+    A = np.exp(-amin**2)*(vlag**2*np.sin(theta)**2 + v0**2)
+    B = -np.exp(-aesc**2)*(vesc**2  - v0**2*amin**2 + vlag**2*np.sin(theta)**2 + v0**2)
+
+    return np.clip((A+B)*N/(np.sqrt(2*np.pi*sigmav**2)), 0, 1e10)/((3e5**2))
 
 #-----------------------------------------------------------
 # Minimum velocity 
@@ -415,40 +450,100 @@ def Nevents_NREFT(E_min, E_max, m_x, cp, cn, target, eff = None,vlag=232.0, sigm
     
     return quad(integ, E_min, E_max)[0]
 
+#----------------------------------------------------------
+#-------- DIRECTIONAL RECOIL RATES ------------------------
+#----------------------------------------------------------
 
+#--------------------------------------------------------
+# Standard Spin-Independent *directional* recoil rate
+# for a particle with (N_p,N_n) protons and neutrons
+def dRdEdOmega_standard(E, theta, N_p, N_n, m_x, sig, vlag=232.0, sigmav=156.0, vesc=544.0):
+    A = N_p + N_n   
+    #print A
+    int_factor = sig*calcSIFormFactor(E, A)*(A**2)
+    
+    return (1/(2*np.pi))*rate_prefactor(m_x)*int_factor*calcRT(vmin(E, A, m_x),theta, vlag, sigmav, vesc)
+    
+#--------------------------------------------------------
+# Differential *directional* recoil rate in NREFT framework
+# Calculates the contribution from the interference of operators
+# i and j (with couplings cp and cn to protons and neutrons)
+def dRdEdOmega_NREFT(E, theta, m_x, cp, cn, target, vlag=232.0, sigmav=156.0, vesc=544.0):   
+    A = Avals[target]
+    
+    RT = calcRT(vmin(E, A, m_x),theta, vlag=vlag, sigmav=sigmav, vesc=vesc)/(2*np.pi)
+    MRT = calcMRT(vmin(E, A, m_x),theta, vlag=vlag, sigmav=sigmav, vesc=vesc)/(2*np.pi)
+    amu = 931.5e3 # keV
+    q1 = np.sqrt(2*A*amu*E)
 
-#---------------------------------------------------------
-#Code for the long range interactions (which we're not using...)
-"""
-        #Long-range interactions
-        elif (i == 101):
-            rate =  (qr**-4)*eta*FF_M(y)
-        elif (i == 104):
-            #rate =  (qr**-4)*(1.0/16.0)*eta*FF_SD(E)
-            rate = 0    #ZERO BY DEFINITION!
-        elif (i == 105):
-            A = meta*FF_M(y)
-            B = eta*(qr**2)*FF_Delta(y)
-            rate =  0.25*(qr**-2.0)*(A+B)
-        elif (i == 106):
-            rate =  (1.0/16.0)*eta*FF_Sigma2(y)
-        elif (i == 111):
-            rate =  0.25*eta*(qr**-2)*FF_M(y)
+    #Recoil momentum over nucleon mass
+    qr = q1/amu
+    
+    # Required for form factors
+    q2 = q1*(1e-12/1.97e-7)
+    b = np.sqrt(41.467/(45*A**(-1.0/3.0) - 25*A**(-2.0/3.0)))
+    y = (q2*b/2)**2
+    
+    #Dark matter spin factor
+    jx = 0.5
+    jfac = jx*(jx+1.0)
+    
+    rate = E*0.0
+    
+    
+    c_sum = [cp[i] + cn[i] for i in range(11)]
+    c_diff = [cp[i] - cn[i] for i in range(11)]
+    c = [c_sum, c_diff]
+    
+    for tau1 in [0,1]:
+        for tau2 in [0,1]:
+            
+            c1 = c[tau1]
+            c2 = c[tau2]
+    
+            R_M = c1[0]*c2[0]*RT + jfac/3.0*(qr**2*MRT*c1[4]*c2[4] \
+                        + MRT*c1[7]*c2[7] + qr**2*RT*c1[10]*c2[10])
+            rate += R_M*np.vectorize(WM.calcwm)(tau1, tau2, y, target)
+    
+            R_P2 = 0.25*qr**2*c1[2]*c2[2]*RT
+            rate += R_P2*np.vectorize(WP2.calcwp2)(tau1, tau2, y, target)
+    
+            #Watch out, this one is the wrong way round...
+            R_P2M = RT*c1[2]*c2[0]
+            rate += R_P2M*np.vectorize(WMP2.calcwmp2)(tau1, tau2, y, target)
+    
+            R_S2 = RT*c1[9]*c2[9]*0.25*qr**2 + RT*jfac/12.0*(c1[3]*c2[3] + \
+                        qr**2*(c1[3]*c2[5] + c1[5]*c2[3]) + qr**4*c1[5]*c2[5])
+            rate += R_S2*np.vectorize(WS2.calcws2)(tau1, tau2, y, target)
+    
+            R_S1 = (1.0/8.0)*MRT*(qr**2*c1[2]*c2[2] + c1[6]*c2[6]) +\
+                        jfac/12.0*RT*(c1[3]*c2[3] + qr**2*c1[8]*c2[8])
+            rate += R_S1*np.vectorize(WS1.calcws1)(tau1, tau2, y, target)
+    
+            R_D = jfac/3.0*RT*(qr**2*c1[4]*c2[4] + c1[7]*c2[7])
+            rate += R_D*np.vectorize(WD.calcwd)(tau1, tau2, y, target)
+    
+            #This one might be flipped too
+            R_S1D = jfac/3.0*RT*(c1[4]*c2[3] - c1[7]*c2[8])
+            rate += R_S1D*np.vectorize(WS1D.calcws1d)(tau1, tau2, y, target)
 
+    conv = (rho0/2./np.pi/m_x)*1.69612985e14 # 1 GeV^-4 * cm^-3 * km^-1 * s * c^6 * hbar^2 to keV^-1 kg^-1 day^-1
 
-    #Interference terms
-    else:
-        if ((i == 1 and j == 3) or (i == 3 and j == 1)):
-            rate = (1.0/2.0)*(qr**2)*eta*FF_MPhi2(y)
-        elif ((i == 4 and j == 5) or (i == 5 and j == 4)):
-            rate = -(1.0/8.0)*(qr**2)*eta*FF_Sigma1Delta(y)
-        elif ((i == 4 and j == 6) or (i == 6 and j == 4)):
-            rate = (1.0/16.0)*(qr**2)*eta*FF_Sigma2(y)
-        elif ((i == 8 and j == 9) or (i == 9 and j ==8)):
-            rate =  (1.0/8.0)*(qr**2)*eta*FF_Sigma1Delta(y)
-        elif ((i == 104 and j == 105) or (i == 105 and j == 104)):
-            rate =  -(1.0/8.0)*eta*FF_Sigma1Delta(y)
-        elif ((i == 104) and (j == 106) or (i == 106 and j == 104)):
-            rate =  (1.0/16.0)*eta*FF_Sigma2(y)
+    rate = np.clip(rate, 0, 1e30)
+    return (4*np.pi/(2*Jvals[target]+1))*rate*conv
 
-"""
+#Check out LabFuncs
+#JulianDay (month, day, year, hour)
+JulianDay = LabFuncs.JulianDay
+
+#Calculate the angle from the mean DM flux, which can then be used as 'theta'
+#in the functions above
+#Note that theta_lab and phi_lab are angles in the lab, as measured in a (N, W, Z)
+#coordinate system. That is, theta_lab = 0 is for recoils going vertically upwards
+#in the lab, and phi_lab = 0 is for recoils going along the North-South axis.
+def calcAngleFromMean(theta_lab, phi_lab, lat, lon, JD=JulianDay(3, 15, 1989, 19)):
+    vlag = -LabFuncs.LabVelocity(JD, lat, lon)
+    dotprod = (sin(theta_lab)*cos(phi_lab)*vlag[0]+ \
+                sin(theta_lab)*sin(phi_lab)*vlag[1] + \
+                cos(theta_lab)*vlag[2])
+    return np.arccos(dotprod/np.sqrt(np.sum(vlag**2)))
