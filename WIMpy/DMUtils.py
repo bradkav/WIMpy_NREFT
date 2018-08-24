@@ -10,7 +10,7 @@
 import numpy as np
 from numpy import pi, cos, sin
 from scipy.integrate import trapz, cumtrapz, quad
-from scipy.interpolate import interp1d
+from scipy.interpolate import interp1d,InterpolatedUnivariateSpline
 from numpy.random import rand
 from scipy.special import erf
 import os
@@ -26,6 +26,13 @@ import WIMpy.WS1 as WS1
 import WIMpy.WS2 as WS2
 import WIMpy.WS1D as WS1D
 
+#----Constants----
+G_FERMI = 1.1664e-5     #Fermi Constant in GeV^-2
+SIN2THETAW = 0.2387     #Sine-squared of the weak angle
+ALPHA_EM = 0.007297353  #EM Fine structure constant
+m_e = 0.5109989461e-3   #Electron mass in GeV  
+SQRT2 = np.sqrt(2.0)  
+
 #Functions for calculating lab velocity as a function of time
 import LabFuncs
 
@@ -36,6 +43,19 @@ J_list = np.loadtxt(os.path.dirname(os.path.realpath(__file__)) + "/Nuclei.txt",
 
 Jvals = dict(zip(target_list, J_list))
 Avals = dict(zip(target_list, A_list))
+
+
+#---------------------------------------------
+#----- Global variables for neutrino fluxes---
+#---------------------------------------------
+
+N_source = 4 #Number of different sources to consider
+nu_source_list = {'DSNB':0, 'atm':1, 'hep':2, '8B':3}
+
+Enu_min = np.zeros(N_source)
+Enu_max = np.zeros(N_source)
+neutrino_flux_list = None
+
 
 
 #----------------------------------------------------
@@ -547,3 +567,161 @@ def calcAngleFromMean(theta_lab, phi_lab, lat, lon, JD=JulianDay(3, 15, 1989, 19
                 sin(theta_lab)*sin(phi_lab)*vlag[1] + \
                 cos(theta_lab)*vlag[2])
     return np.arccos(dotprod/np.sqrt(np.sum(vlag**2)))
+    
+    
+    
+#------------------------------------
+#----Coherent neutrino scattering----
+#------------------------------------
+
+#Maximum nuclear recoil energy (in keV)
+#for a given neutrino energy (in MeV)
+def ERmax(E_nu, A):
+
+    #Nuclear mass in MeV
+    m_A_MeV = A*0.9315e3
+    return 1e3*(2.0*E_nu*E_nu)/(m_A_MeV + 2*E_nu)
+
+
+#----Main cross section calculation----
+
+def xsec_CEvNS(E_R, E_nu, A, Z):
+    """
+    Calculates the differential cross section for
+    Coherent Elastic Neutrino-Nucleus Scattering.
+    
+    Parameters
+    ----------
+    E_R : float
+        Recoil energy (in keV)
+    E_nu : float
+        Neutrino energy (in MeV)
+    A   : int
+        Mass number of target nucleus
+    Z   : int
+        Atomic number of target nucleus
+        
+    Returns
+    -------
+    float
+        Differential scattering cross section 
+        (in cm^2/keV)
+    """
+    
+    m_A = A*0.9315 #Mass of target nucleus (in GeV)
+    q = np.sqrt(2.0*E_R*m_A) #Recoil momentum (in MeV)
+    #Note: m_A in GeV, E_R in keV, E_nu in MeV
+    
+    #Calculate SM contribution
+    Qv = (A-Z) - (1.0-4.0*SIN2THETAW)*Z #Coherence factor
+    
+    xsec_SM = (G_FERMI*G_FERMI/(4.0*np.pi))*Qv*Qv*m_A*   \
+        (1.0-(q*q)/(4.0*E_nu*E_nu))
+    
+    #Calculate New-Physics correction from Z' coupling
+    #Assume universal coupling to quarks (u and d)
+    #QvNP = 3.0*A*gsq
+
+    #Factor of 1e6 from (GeV/MeV)^2
+    #G_V = 1 - 1e6*(SQRT2/G_FERMI)*(QvNP/Qv)*1.0/(q*q + m_med*m_med)
+    
+    #Convert from (GeV^-3) to (cm^2/keV)
+    #and multiply by form factor
+    return xsec_SM*1e-6*(1.98e-14)*(1.98e-14)*calcSIFormFactor(E_R, A)
+    
+#Calculate recoil rate (in events/kg/keV/day)
+def dRdE_CEvNS(E_R, A, Z, flux_name="all"):
+    """
+    Calculates the differential recoil rate for
+    Coherent Elastic Neutrino-Nucleus Scattering
+    from Chooz reactor neutrinos.
+    
+    Checks to see whether the neutrino flux table
+    has been loaded (and loads it if not...)
+    
+    Parameters
+    ----------
+    E_R : float
+        Recoil energy (in keV)
+    A   : int
+        Mass number of target nucleus
+    Z   : int
+        Atomic number of target nucleus
+    
+    Returns
+    -------
+    float
+        Differential recoil rate
+        (in /kg/keV/day)
+    """
+
+    if (flux_name not in nu_source_list.keys() and flux_name != "all"):
+        print("    DMUtils.py: dRdE_CEvNS: flux_name <" + flux_name + "> is not valid.")
+        print("    Valid options are 'DSNB', 'atm', 'hep', '8B' and 'all'...")
+        raise SystemExit
+
+    #If 'all' just recursively call all the relevant flux types and add them
+    if (flux_name == "all"):
+        result = 0
+        for flux in nu_source_list.keys():
+            result += dRdE_CEvNS(E_R, A, Z, flux)
+        return result
+            
+
+    fluxID = nu_source_list[flux_name]
+    
+    #First, check that the neutrino flux has been loaded
+    if (neutrino_flux_list == None):
+        print(" DMutils.py: Loading neutrino flux for the first time...")
+        loadNeutrinoFlux()
+    
+    integrand = lambda E_nu: xsec_CEvNS(E_R, E_nu, A, Z)\
+                        *neutrino_flux_list[fluxID](E_nu)
+    
+    #Minimum neutrino energy required (in MeV)
+    E_min = np.sqrt(A*0.9315*E_R/2)
+    
+    E_min = np.maximum(E_min, Enu_min[fluxID])
+    
+    #For reactor neutrinos, set E_max:
+    E_max = Enu_max[fluxID]
+    
+    if (E_min > E_max):
+        return 0
+    
+    m_N = A*1.66054e-27 #Nucleus mass in kg
+    rate = quad(integrand, E_min, E_max, epsrel=1e-4)[0]/m_N
+    
+    return 86400.0*rate #Convert from (per second) to (per day)
+
+
+#Load neutrino fluxes and save as interpolation function
+#(neutrino_flux) in units of neutrinos/cm^2/s/MeV 
+#(with input E, in MeV)
+def loadNeutrinoFlux():
+    #global neutrino_flux_tot
+    global neutrino_flux_list
+    global Enu_min
+    global Enu_max
+    #global nu_source
+    
+    #Initialise the list of neutrino fluxes to all return zero
+    neutrino_flux_list = [lambda x: 1e-30 for i in range(N_source)]
+    
+    print("Loading neutrino fluxes for...")
+    for flux_name, i in nu_source_list.items():
+        print("    " + flux_name)
+        
+        fluxID = nu_source_list[flux_name]
+        
+        #Read in data from file
+        data = np.loadtxt(os.path.dirname(os.path.realpath(__file__)) + "/nu_spectra/spectrum_" + flux_name + ".txt")
+        
+        #Read in minimum and maximum energies
+        Enu_min[fluxID] = np.min(data[:,0])
+        Enu_max[fluxID] = np.max(data[:,0])
+        
+        neutrino_flux_list[fluxID] = InterpolatedUnivariateSpline(data[:,0], data[:,1], k = 1)
+        
+    print("...done.")
+        
