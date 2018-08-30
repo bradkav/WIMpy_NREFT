@@ -7,3 +7,4 @@ import WIMpy.WP2
 import WIMpy.WS1
 import WIMpy.WS2
 import WIMpy.WS1D
+import WIMpy.LabFuncs
