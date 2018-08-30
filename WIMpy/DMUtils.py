@@ -34,7 +34,7 @@ m_e = 0.5109989461e-3   #Electron mass in GeV
 SQRT2 = np.sqrt(2.0)  
 
 #Functions for calculating lab velocity as a function of time
-import WiMpy.LabFuncs as LabFuncs
+import WIMpy.LabFuncs as LabFuncs
 
 #Load in the list of nuclear spins and atomic masses
 target_list = np.loadtxt(os.path.dirname(os.path.realpath(__file__)) + "/Nuclei.txt", usecols=(0,), dtype=bytes).astype(str)
