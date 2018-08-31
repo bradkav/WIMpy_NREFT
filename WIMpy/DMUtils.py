@@ -662,7 +662,6 @@ def dRdE_CEvNS(E_R, N_p, N_n, flux_name="all"):
     """
 
     A = N_p + N_n
-    Z = N_p
 
     if (flux_name not in nu_source_list.keys() and flux_name != "all"):
         print("    DMUtils.py: dRdE_CEvNS: flux_name <" + flux_name + "> is not valid.")
@@ -673,7 +672,7 @@ def dRdE_CEvNS(E_R, N_p, N_n, flux_name="all"):
     if (flux_name == "all"):
         result = 0
         for flux in nu_source_list.keys():
-            result += dRdE_CEvNS(E_R, A, Z, flux)
+            result += dRdE_CEvNS(E_R, N_p, N_n, flux)
         return result
             
 
@@ -684,7 +683,7 @@ def dRdE_CEvNS(E_R, N_p, N_n, flux_name="all"):
         print(" DMutils.py: Loading neutrino flux for the first time...")
         loadNeutrinoFlux()
     
-    integrand = lambda E_nu: xsec_CEvNS(E_R, E_nu, A, Z)\
+    integrand = lambda E_nu: xsec_CEvNS(E_R, E_nu, N_p, N_n)\
                         *neutrino_flux_list[fluxID](E_nu)
     
     #Minimum neutrino energy required (in MeV)
