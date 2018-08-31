@@ -49,8 +49,8 @@ Avals = dict(zip(target_list, A_list))
 #----- Global variables for neutrino fluxes---
 #---------------------------------------------
 
-N_source = 4 #Number of different sources to consider
-nu_source_list = {'DSNB':0, 'atm':1, 'hep':2, '8B':3}
+N_source = 6 #Number of different sources to consider
+nu_source_list = {'DSNB':0, 'atm':1, 'hep':2, '8B':3, '15O':4, '17F':5}
 
 Enu_min = np.zeros(N_source)
 Enu_max = np.zeros(N_source)
@@ -652,7 +652,7 @@ def dRdE_CEvNS(E_R, N_p, N_n, flux_name="all"):
         Number of neutrons of target nucleus
     flux_name : string
         Which neutrino flux to consider:
-        'DSNB', 'atm', 'hep', '8B' or 'all'
+        'DSNB', 'atm', 'hep', '8B', '15O', '17F' or 'all'
     
     Returns
     -------
@@ -665,7 +665,7 @@ def dRdE_CEvNS(E_R, N_p, N_n, flux_name="all"):
 
     if (flux_name not in nu_source_list.keys() and flux_name != "all"):
         print("    DMUtils.py: dRdE_CEvNS: flux_name <" + flux_name + "> is not valid.")
-        print("    Valid options are 'DSNB', 'atm', 'hep', '8B' and 'all'...")
+        print("    Valid options are 'DSNB', 'atm', 'hep', '8B', '15O', '17F' and 'all'...")
         raise SystemExit
 
     #If 'all' just recursively call all the relevant flux types and add them

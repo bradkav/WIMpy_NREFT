@@ -5,12 +5,12 @@
 #
 # Author: Bradley J Kavanagh
 # Email: bradkav@gmail.com
-# Last updated: 02/03/2018
+# Last updated: 26/07/2018
 
 import numpy as np
 from numpy import pi, cos, sin
 from scipy.integrate import trapz, cumtrapz, quad
-from scipy.interpolate import interp1d
+from scipy.interpolate import interp1d,InterpolatedUnivariateSpline
 from numpy.random import rand
 from scipy.special import erf
 import os
@@ -26,6 +26,16 @@ import WIMpy.WS1 as WS1
 import WIMpy.WS2 as WS2
 import WIMpy.WS1D as WS1D
 
+#----Constants----
+G_FERMI = 1.1664e-5     #Fermi Constant in GeV^-2
+SIN2THETAW = 0.2387     #Sine-squared of the weak angle
+ALPHA_EM = 0.007297353  #EM Fine structure constant
+m_e = 0.5109989461e-3   #Electron mass in GeV  
+SQRT2 = np.sqrt(2.0)  
+
+#Functions for calculating lab velocity as a function of time
+import WIMpy.LabFuncs as LabFuncs
+
 #Load in the list of nuclear spins and atomic masses
 target_list = np.loadtxt(os.path.dirname(os.path.realpath(__file__)) + "/Nuclei.txt", usecols=(0,), dtype=bytes).astype(str)
 A_list = np.loadtxt(os.path.dirname(os.path.realpath(__file__)) + "/Nuclei.txt", usecols=(1,))
@@ -33,6 +43,19 @@ J_list = np.loadtxt(os.path.dirname(os.path.realpath(__file__)) + "/Nuclei.txt",
 
 Jvals = dict(zip(target_list, J_list))
 Avals = dict(zip(target_list, A_list))
+
+
+#---------------------------------------------
+#----- Global variables for neutrino fluxes---
+#---------------------------------------------
+
+N_source = 6 #Number of different sources to consider
+nu_source_list = {'DSNB':0, 'atm':1, 'hep':2, '8B':3, '15O':4, '17F':5}
+
+Enu_min = np.zeros(N_source)
+Enu_max = np.zeros(N_source)
+neutrino_flux_list = None
+
 
 
 #----------------------------------------------------
@@ -70,11 +93,43 @@ def calcMEta(vmin, vlag=230.0, sigmav=156.0,vesc=544.0):
     aesc = vesc/v0
     aE = vlag/v0
     
+    N = 1.0/(erf(aesc) - np.sqrt(2.0/np.pi)*(vesc/sigmav)*np.exp(-0.5*(vesc/sigmav)**2))
+    
     A = v0*((aminus/(2*np.sqrt(pi)*aE) + pi**-0.5)*np.exp(-aminus**2) - (aplus/(2*np.sqrt(pi)*aE) - pi**-0.5)*np.exp(-aplus**2))   
     B = (v0/(4.0*aE))*(1+2.0*aE**2)*(erf(aplus) - erf(aminus))
     C = -(v0*pi**-0.5)*(2 + (1/(3.0*aE))*((amin + aesc - aminus)**3 - (amin + aesc - aplus)**3))*np.exp(-aesc**2)
     
-    return np.clip(A+B+C, 0, 1e10)/((3e5**2))
+    return (np.clip((A+B+C)*N - vmin**2*calcEta(vmin,vlag,sigmav,vesc), 0, 1e10))/((3e5**2))
+#NB: Corrected a minor (roughly factor of 2) error in calcMeta  - BJK 26/07/2018
+
+
+#---------------------------------------------------------
+# Radon transform (the equivalent of eta for directional detection)
+def calcRT(vmin, theta, vlag=230.0, sigmav=156.0,vesc=544.0):
+    v0 = np.sqrt(2.0)*sigmav
+    aesc = vesc/v0
+    amin = np.minimum(vmin - vlag*np.cos(theta),vmin*0.0 + vesc)/v0
+    
+    N = 1.0/(erf(aesc) - np.sqrt(2.0/np.pi)*(vesc/sigmav)*np.exp(-0.5*(vesc/sigmav)**2))
+    
+    A = np.exp(-amin**2) - np.exp(-aesc**2)
+    A *= N/(np.sqrt(2*np.pi*sigmav**2))
+    
+    return np.clip(A, 0, 1e10)
+
+#---------------------------------------------------------
+# Modified Radon transform (the equivalent of eta for directional detection)
+def calcMRT(vmin, theta, vlag=230.0, sigmav=156.0,vesc=544.0):
+    v0 = np.sqrt(2.0)*sigmav
+    aesc = vesc/v0
+    amin = np.minimum(vmin - vlag*np.cos(theta),vmin*0.0 + vesc)/v0
+    
+    N = 1.0/(erf(aesc) - np.sqrt(2.0/np.pi)*(vesc/sigmav)*np.exp(-0.5*(vesc/sigmav)**2))
+    
+    A = np.exp(-amin**2)*(vlag**2*np.sin(theta)**2 + v0**2)
+    B = -np.exp(-aesc**2)*(vesc**2  - v0**2*amin**2 + vlag**2*np.sin(theta)**2 + v0**2)
+
+    return np.clip((A+B)*N/(np.sqrt(2*np.pi*sigmav**2)), 0, 1e10)/((3e5**2))
 
 #-----------------------------------------------------------
 # Minimum velocity 
@@ -415,40 +470,266 @@ def Nevents_NREFT(E_min, E_max, m_x, cp, cn, target, eff = None,vlag=232.0, sigm
     
     return quad(integ, E_min, E_max)[0]
 
+#----------------------------------------------------------
+#-------- DIRECTIONAL RECOIL RATES ------------------------
+#----------------------------------------------------------
+
+#--------------------------------------------------------
+# Standard Spin-Independent *directional* recoil rate
+# for a particle with (N_p,N_n) protons and neutrons
+def dRdEdOmega_standard(E, theta, N_p, N_n, m_x, sig, vlag=232.0, sigmav=156.0, vesc=544.0):
+    A = N_p + N_n   
+    #print A
+    int_factor = sig*calcSIFormFactor(E, A)*(A**2)
+    
+    return (1/(2*np.pi))*rate_prefactor(m_x)*int_factor*calcRT(vmin(E, A, m_x),theta, vlag, sigmav, vesc)
+    
+#--------------------------------------------------------
+# Differential *directional* recoil rate in NREFT framework
+# Calculates the contribution from the interference of operators
+# i and j (with couplings cp and cn to protons and neutrons)
+def dRdEdOmega_NREFT(E, theta, m_x, cp, cn, target, vlag=232.0, sigmav=156.0, vesc=544.0):   
+    A = Avals[target]
+    
+    RT = calcRT(vmin(E, A, m_x),theta, vlag=vlag, sigmav=sigmav, vesc=vesc)/(2*np.pi)
+    MRT = calcMRT(vmin(E, A, m_x),theta, vlag=vlag, sigmav=sigmav, vesc=vesc)/(2*np.pi)
+    amu = 931.5e3 # keV
+    q1 = np.sqrt(2*A*amu*E)
+
+    #Recoil momentum over nucleon mass
+    qr = q1/amu
+    
+    # Required for form factors
+    q2 = q1*(1e-12/1.97e-7)
+    b = np.sqrt(41.467/(45*A**(-1.0/3.0) - 25*A**(-2.0/3.0)))
+    y = (q2*b/2)**2
+    
+    #Dark matter spin factor
+    jx = 0.5
+    jfac = jx*(jx+1.0)
+    
+    rate = E*0.0
+    
+    
+    c_sum = [cp[i] + cn[i] for i in range(11)]
+    c_diff = [cp[i] - cn[i] for i in range(11)]
+    c = [c_sum, c_diff]
+    
+    for tau1 in [0,1]:
+        for tau2 in [0,1]:
+            
+            c1 = c[tau1]
+            c2 = c[tau2]
+    
+            R_M = c1[0]*c2[0]*RT + jfac/3.0*(qr**2*MRT*c1[4]*c2[4] \
+                        + MRT*c1[7]*c2[7] + qr**2*RT*c1[10]*c2[10])
+            rate += R_M*np.vectorize(WM.calcwm)(tau1, tau2, y, target)
+    
+            R_P2 = 0.25*qr**2*c1[2]*c2[2]*RT
+            rate += R_P2*np.vectorize(WP2.calcwp2)(tau1, tau2, y, target)
+    
+            #Watch out, this one is the wrong way round...
+            R_P2M = RT*c1[2]*c2[0]
+            rate += R_P2M*np.vectorize(WMP2.calcwmp2)(tau1, tau2, y, target)
+    
+            R_S2 = RT*c1[9]*c2[9]*0.25*qr**2 + RT*jfac/12.0*(c1[3]*c2[3] + \
+                        qr**2*(c1[3]*c2[5] + c1[5]*c2[3]) + qr**4*c1[5]*c2[5])
+            rate += R_S2*np.vectorize(WS2.calcws2)(tau1, tau2, y, target)
+    
+            R_S1 = (1.0/8.0)*MRT*(qr**2*c1[2]*c2[2] + c1[6]*c2[6]) +\
+                        jfac/12.0*RT*(c1[3]*c2[3] + qr**2*c1[8]*c2[8])
+            rate += R_S1*np.vectorize(WS1.calcws1)(tau1, tau2, y, target)
+    
+            R_D = jfac/3.0*RT*(qr**2*c1[4]*c2[4] + c1[7]*c2[7])
+            rate += R_D*np.vectorize(WD.calcwd)(tau1, tau2, y, target)
+    
+            #This one might be flipped too
+            R_S1D = jfac/3.0*RT*(c1[4]*c2[3] - c1[7]*c2[8])
+            rate += R_S1D*np.vectorize(WS1D.calcws1d)(tau1, tau2, y, target)
+
+    conv = (rho0/2./np.pi/m_x)*1.69612985e14 # 1 GeV^-4 * cm^-3 * km^-1 * s * c^6 * hbar^2 to keV^-1 kg^-1 day^-1
+
+    rate = np.clip(rate, 0, 1e30)
+    return (4*np.pi/(2*Jvals[target]+1))*rate*conv
+
+#Check out LabFuncs
+#JulianDay (month, day, year, hour)
+JulianDay = LabFuncs.JulianDay
+
+#Calculate the angle from the mean DM flux, which can then be used as 'theta'
+#in the functions above
+#Note that theta_lab and phi_lab are angles in the lab, as measured in a (N, W, Z)
+#coordinate system. That is, theta_lab = 0 is for recoils going vertically upwards
+#in the lab, and phi_lab = 0 is for recoils going along the North-South axis.
+def calcAngleFromMean(theta_lab, phi_lab, lat, lon, JD=JulianDay(3, 15, 1989, 19)):
+    vlag = -LabFuncs.LabVelocity(JD, lat, lon)
+    dotprod = (sin(theta_lab)*cos(phi_lab)*vlag[0]+ \
+                sin(theta_lab)*sin(phi_lab)*vlag[1] + \
+                cos(theta_lab)*vlag[2])
+    return np.arccos(dotprod/np.sqrt(np.sum(vlag**2)))
+    
+    
+    
+#------------------------------------
+#----Coherent neutrino scattering----
+#------------------------------------
+
+#Maximum nuclear recoil energy (in keV)
+#for a given neutrino energy (in MeV)
+def ERmax(E_nu, A):
+
+    #Nuclear mass in MeV
+    m_A_MeV = A*0.9315e3
+    return 1e3*(2.0*E_nu*E_nu)/(m_A_MeV + 2*E_nu)
 
 
-#---------------------------------------------------------
-#Code for the long range interactions (which we're not using...)
-"""
-        #Long-range interactions
-        elif (i == 101):
-            rate =  (qr**-4)*eta*FF_M(y)
-        elif (i == 104):
-            #rate =  (qr**-4)*(1.0/16.0)*eta*FF_SD(E)
-            rate = 0    #ZERO BY DEFINITION!
-        elif (i == 105):
-            A = meta*FF_M(y)
-            B = eta*(qr**2)*FF_Delta(y)
-            rate =  0.25*(qr**-2.0)*(A+B)
-        elif (i == 106):
-            rate =  (1.0/16.0)*eta*FF_Sigma2(y)
-        elif (i == 111):
-            rate =  0.25*eta*(qr**-2)*FF_M(y)
+#----Main cross section calculation----
+
+def xsec_CEvNS(E_R, E_nu, N_p, N_n):
+    """
+    Calculates the differential cross section for
+    Coherent Elastic Neutrino-Nucleus Scattering.
+    
+    Parameters
+    ----------
+    E_R : float
+        Recoil energy (in keV)
+    E_nu : float
+        Neutrino energy (in MeV)
+    N_p   : int
+        Number of protons in target nucleus
+    N_n   : int
+        Number of neutrons of target nucleus
+        
+    Returns
+    -------
+    float
+        Differential scattering cross section 
+        (in cm^2/keV)
+    """
+    
+    A = N_p + N_n
+    Z = N_p
+    
+    m_A = A*0.9315 #Mass of target nucleus (in GeV)
+    q = np.sqrt(2.0*E_R*m_A) #Recoil momentum (in MeV)
+    #Note: m_A in GeV, E_R in keV, E_nu in MeV
+    
+    #Calculate SM contribution
+    Qv = (A-Z) - (1.0-4.0*SIN2THETAW)*Z #Coherence factor
+    
+    xsec_SM = (G_FERMI*G_FERMI/(4.0*np.pi))*Qv*Qv*m_A*   \
+        (1.0-(q*q)/(4.0*E_nu*E_nu))
+    
+    #Calculate New-Physics correction from Z' coupling
+    #Assume universal coupling to quarks (u and d)
+    #QvNP = 3.0*A*gsq
+
+    #Factor of 1e6 from (GeV/MeV)^2
+    #G_V = 1 - 1e6*(SQRT2/G_FERMI)*(QvNP/Qv)*1.0/(q*q + m_med*m_med)
+    
+    #Convert from (GeV^-3) to (cm^2/keV)
+    #and multiply by form factor
+    return xsec_SM*1e-6*(1.98e-14)*(1.98e-14)*calcSIFormFactor(E_R, A)
+    
+#Calculate recoil rate (in events/kg/keV/day)
+def dRdE_CEvNS(E_R, N_p, N_n, flux_name="all"):
+    """
+    Calculates the differential recoil rate for
+    Coherent Elastic Neutrino-Nucleus Scattering
+    from Chooz reactor neutrinos.
+    
+    Checks to see whether the neutrino flux table
+    has been loaded (and loads it if not...)
+    
+    Parameters
+    ----------
+    E_R : float
+        Recoil energy (in keV)
+    N_p   : int
+        Number of protons in target nucleus
+    N_n   : int
+        Number of neutrons of target nucleus
+    flux_name : string
+        Which neutrino flux to consider:
+        'DSNB', 'atm', 'hep', '8B', '15O', '17F' or 'all'
+    
+    Returns
+    -------
+    float
+        Differential recoil rate
+        (in /kg/keV/day)
+    """
+
+    A = N_p + N_n
+
+    if (flux_name not in nu_source_list.keys() and flux_name != "all"):
+        print("    DMUtils.py: dRdE_CEvNS: flux_name <" + flux_name + "> is not valid.")
+        print("    Valid options are 'DSNB', 'atm', 'hep', '8B', '15O', '17F' and 'all'...")
+        raise SystemExit
+
+    #If 'all' just recursively call all the relevant flux types and add them
+    if (flux_name == "all"):
+        result = 0
+        for flux in nu_source_list.keys():
+            result += dRdE_CEvNS(E_R, N_p, N_n, flux)
+        return result
+            
+
+    fluxID = nu_source_list[flux_name]
+    
+    #First, check that the neutrino flux has been loaded
+    if (neutrino_flux_list == None):
+        print(" DMutils.py: Loading neutrino flux for the first time...")
+        loadNeutrinoFlux()
+    
+    integrand = lambda E_nu: xsec_CEvNS(E_R, E_nu, N_p, N_n)\
+                        *neutrino_flux_list[fluxID](E_nu)
+    
+    #Minimum neutrino energy required (in MeV)
+    E_min = np.sqrt(A*0.9315*E_R/2)
+    
+    E_min = np.maximum(E_min, Enu_min[fluxID])
+    
+    #For reactor neutrinos, set E_max:
+    E_max = Enu_max[fluxID]
+    
+    if (E_min > E_max):
+        return 0
+    
+    m_N = A*1.66054e-27 #Nucleus mass in kg
+    rate = quad(integrand, E_min, E_max, epsrel=1e-4)[0]/m_N
+    
+    return 86400.0*rate #Convert from (per second) to (per day)
 
 
-    #Interference terms
-    else:
-        if ((i == 1 and j == 3) or (i == 3 and j == 1)):
-            rate = (1.0/2.0)*(qr**2)*eta*FF_MPhi2(y)
-        elif ((i == 4 and j == 5) or (i == 5 and j == 4)):
-            rate = -(1.0/8.0)*(qr**2)*eta*FF_Sigma1Delta(y)
-        elif ((i == 4 and j == 6) or (i == 6 and j == 4)):
-            rate = (1.0/16.0)*(qr**2)*eta*FF_Sigma2(y)
-        elif ((i == 8 and j == 9) or (i == 9 and j ==8)):
-            rate =  (1.0/8.0)*(qr**2)*eta*FF_Sigma1Delta(y)
-        elif ((i == 104 and j == 105) or (i == 105 and j == 104)):
-            rate =  -(1.0/8.0)*eta*FF_Sigma1Delta(y)
-        elif ((i == 104) and (j == 106) or (i == 106 and j == 104)):
-            rate =  (1.0/16.0)*eta*FF_Sigma2(y)
-
-"""
+#Load neutrino fluxes and save as interpolation function
+#(neutrino_flux) in units of neutrinos/cm^2/s/MeV 
+#(with input E, in MeV)
+def loadNeutrinoFlux():
+    #global neutrino_flux_tot
+    global neutrino_flux_list
+    global Enu_min
+    global Enu_max
+    #global nu_source
+    
+    #Initialise the list of neutrino fluxes to all return zero
+    neutrino_flux_list = [lambda x: 1e-30 for i in range(N_source)]
+    
+    print("Loading neutrino fluxes for...")
+    for flux_name, i in nu_source_list.items():
+        print("    " + flux_name)
+        
+        fluxID = nu_source_list[flux_name]
+        
+        #Read in data from file
+        data = np.loadtxt(os.path.dirname(os.path.realpath(__file__)) + "/nu_spectra/spectrum_" + flux_name + ".txt")
+        
+        #Read in minimum and maximum energies
+        Enu_min[fluxID] = np.min(data[:,0])
+        Enu_max[fluxID] = np.max(data[:,0])
+        
+        neutrino_flux_list[fluxID] = InterpolatedUnivariateSpline(data[:,0], data[:,1], k = 1)
+        
+    print("...done.")
+        
