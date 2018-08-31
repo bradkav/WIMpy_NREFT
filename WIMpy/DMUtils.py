@@ -585,7 +585,7 @@ def ERmax(E_nu, A):
 
 #----Main cross section calculation----
 
-def xsec_CEvNS(E_R, E_nu, A, Z):
+def xsec_CEvNS(E_R, E_nu, N_p, N_n):
     """
     Calculates the differential cross section for
     Coherent Elastic Neutrino-Nucleus Scattering.
@@ -596,10 +596,10 @@ def xsec_CEvNS(E_R, E_nu, A, Z):
         Recoil energy (in keV)
     E_nu : float
         Neutrino energy (in MeV)
-    A   : int
-        Mass number of target nucleus
-    Z   : int
-        Atomic number of target nucleus
+    N_p   : int
+        Number of protons in target nucleus
+    N_n   : int
+        Number of neutrons of target nucleus
         
     Returns
     -------
@@ -607,6 +607,9 @@ def xsec_CEvNS(E_R, E_nu, A, Z):
         Differential scattering cross section 
         (in cm^2/keV)
     """
+    
+    A = N_p + N_n
+    Z = N_p
     
     m_A = A*0.9315 #Mass of target nucleus (in GeV)
     q = np.sqrt(2.0*E_R*m_A) #Recoil momentum (in MeV)
@@ -630,7 +633,7 @@ def xsec_CEvNS(E_R, E_nu, A, Z):
     return xsec_SM*1e-6*(1.98e-14)*(1.98e-14)*calcSIFormFactor(E_R, A)
     
 #Calculate recoil rate (in events/kg/keV/day)
-def dRdE_CEvNS(E_R, A, Z, flux_name="all"):
+def dRdE_CEvNS(E_R, N_p, N_n, flux_name="all"):
     """
     Calculates the differential recoil rate for
     Coherent Elastic Neutrino-Nucleus Scattering
@@ -643,10 +646,13 @@ def dRdE_CEvNS(E_R, A, Z, flux_name="all"):
     ----------
     E_R : float
         Recoil energy (in keV)
-    A   : int
-        Mass number of target nucleus
-    Z   : int
-        Atomic number of target nucleus
+    N_p   : int
+        Number of protons in target nucleus
+    N_n   : int
+        Number of neutrons of target nucleus
+    flux_name : string
+        Which neutrino flux to consider:
+        'DSNB', 'atm', 'hep', '8B' or 'all'
     
     Returns
     -------
@@ -654,6 +660,9 @@ def dRdE_CEvNS(E_R, A, Z, flux_name="all"):
         Differential recoil rate
         (in /kg/keV/day)
     """
+
+    A = N_p + N_n
+    Z = N_p
 
     if (flux_name not in nu_source_list.keys() and flux_name != "all"):
         print("    DMUtils.py: dRdE_CEvNS: flux_name <" + flux_name + "> is not valid.")
