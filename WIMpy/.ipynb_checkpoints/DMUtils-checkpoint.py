@@ -49,12 +49,15 @@ Avals = dict(zip(target_list, A_list))
 #----- Global variables for neutrino fluxes---
 #---------------------------------------------
 
-N_source = 6 #Number of different sources to consider
-nu_source_list = {'DSNB':0, 'atm':1, 'hep':2, '8B':3, '15O':4, '17F':5}
+N_source = 8 #Number of different sources to consider
+nu_source_list = {'DSNB':0, 'atm':1, 'hep':2, '8B':3, '15O':4, '17F':5, 'pep': 6, '13N': 7}
 
 Enu_min = np.zeros(N_source)
 Enu_max = np.zeros(N_source)
 neutrino_flux_list = None
+
+E_pep = 1.440 #MeV
+flux_pep = 1.44e8 #cm^-2 s^-1
 
 
 
@@ -665,7 +668,7 @@ def dRdE_CEvNS(E_R, N_p, N_n, flux_name="all"):
 
     if (flux_name not in nu_source_list.keys() and flux_name != "all"):
         print("    DMUtils.py: dRdE_CEvNS: flux_name <" + flux_name + "> is not valid.")
-        print("    Valid options are 'DSNB', 'atm', 'hep', '8B', '15O', '17F' and 'all'...")
+        print("    Valid options are 'DSNB', 'atm', 'hep', '8B', '15O', '17F', '13N', 'pep' and 'all'...")
         raise SystemExit
 
     #If 'all' just recursively call all the relevant flux types and add them
@@ -674,7 +677,7 @@ def dRdE_CEvNS(E_R, N_p, N_n, flux_name="all"):
         for flux in nu_source_list.keys():
             result += dRdE_CEvNS(E_R, N_p, N_n, flux)
         return result
-            
+    
 
     fluxID = nu_source_list[flux_name]
     
@@ -683,21 +686,31 @@ def dRdE_CEvNS(E_R, N_p, N_n, flux_name="all"):
         print(" DMutils.py: Loading neutrino flux for the first time...")
         loadNeutrinoFlux()
     
-    integrand = lambda E_nu: xsec_CEvNS(E_R, E_nu, N_p, N_n)\
-                        *neutrino_flux_list[fluxID](E_nu)
+    m_N = A*1.66054e-27 #Nucleus mass in kg
     
     #Minimum neutrino energy required (in MeV)
     E_min = np.sqrt(A*0.9315*E_R/2)
     
     E_min = np.maximum(E_min, Enu_min[fluxID])
     
-    #For reactor neutrinos, set E_max:
+    #Set E_max:
     E_max = Enu_max[fluxID]
     
     if (E_min > E_max):
         return 0
     
-    m_N = A*1.66054e-27 #Nucleus mass in kg
+    if (flux_name == "pep"):
+        if (E_min < E_pep):
+            rate = xsec_CEvNS(E_R, E_pep, N_p, N_n)*flux_pep/m_N
+            return 86400.0*rate
+        else:
+            return 0
+        
+    
+    integrand = lambda E_nu: xsec_CEvNS(E_R, E_nu, N_p, N_n)\
+                        *neutrino_flux_list[fluxID](E_nu)
+    
+    
     rate = quad(integrand, E_min, E_max, epsrel=1e-4)[0]/m_N
     
     return 86400.0*rate #Convert from (per second) to (per day)
@@ -722,14 +735,20 @@ def loadNeutrinoFlux():
         
         fluxID = nu_source_list[flux_name]
         
-        #Read in data from file
-        data = np.loadtxt(os.path.dirname(os.path.realpath(__file__)) + "/nu_spectra/spectrum_" + flux_name + ".txt")
+        if (flux_name == "pep"):
+            #Read in minimum and maximum energies
+            Enu_min[fluxID] = 0.0
+            Enu_max[fluxID] = E_pep
+        else:
         
-        #Read in minimum and maximum energies
-        Enu_min[fluxID] = np.min(data[:,0])
-        Enu_max[fluxID] = np.max(data[:,0])
+            #Read in data from file
+            data = np.loadtxt(os.path.dirname(os.path.realpath(__file__)) + "/nu_spectra/spectrum_" + flux_name + ".txt")
         
-        neutrino_flux_list[fluxID] = InterpolatedUnivariateSpline(data[:,0], data[:,1], k = 1)
+            #Read in minimum and maximum energies
+            Enu_min[fluxID] = np.min(data[:,0])
+            Enu_max[fluxID] = np.max(data[:,0])
+        
+            neutrino_flux_list[fluxID] = InterpolatedUnivariateSpline(data[:,0], data[:,1], k = 1)
         
     print("...done.")
         
