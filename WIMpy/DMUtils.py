@@ -49,17 +49,25 @@ Avals = dict(zip(target_list, A_list))
 #----- Global variables for neutrino fluxes---
 #---------------------------------------------
 
-N_source = 8 #Number of different sources to consider
-nu_source_list = {'DSNB':0, 'atm':1, 'hep':2, '8B':3, '15O':4, '17F':5, 'pep': 6, '13N': 7}
+N_source = 11 #Number of different sources to consider
+nu_source_list = {'DSNB':0, 'atm':1, 'hep':2, '8B':3, '15O':4,
+                     '17F':5, 'pep': 6, '13N': 7, 'pp': 8, '7Be-384':9, '7Be-861':10}
 
 Enu_min = np.zeros(N_source)
 Enu_max = np.zeros(N_source)
 neutrino_flux_list = None
 
 E_pep = 1.440 #MeV
-flux_pep = 1.44e8 #cm^-2 s^-1
+#flux_pep = 1.44e8 #cm^-2 s^-1
 
+E_7Be_384 = 0.3843
+#flux_7Be_384 = 4.84e8
 
+E_7Be_861 = 0.8613
+#flux_7Be_861 = 4.35e9
+
+#Total fluxes for the 3 neutrino lines
+nu_line_flux = {'pep': 1.44e8, '7Be-384': 4.84e8, '7Be-861': 4.35e9} #cm^-2 s^-1
 
 #----------------------------------------------------
 #---- Velocity Integrals (and helper functions) -----
@@ -699,12 +707,10 @@ def dRdE_CEvNS(E_R, N_p, N_n, flux_name="all"):
     if (E_min > E_max):
         return 0
     
-    if (flux_name == "pep"):
-        if (E_min < E_pep):
-            rate = xsec_CEvNS(E_R, E_pep, N_p, N_n)*flux_pep/m_N
-            return 86400.0*rate
-        else:
-            return 0
+    if (flux_name in ["pep", "7Be-384", "7Be-861"]):
+        flux = nu_line_flux[flux_name]
+        rate = xsec_CEvNS(E_R, E_max, N_p, N_n)*flux/m_N
+        return 86400.0*rate
         
     
     integrand = lambda E_nu: xsec_CEvNS(E_R, E_nu, N_p, N_n)\
@@ -739,6 +745,12 @@ def loadNeutrinoFlux():
             #Read in minimum and maximum energies
             Enu_min[fluxID] = 0.0
             Enu_max[fluxID] = E_pep
+        elif (flux_name == "7Be-384"):
+            Enu_min[fluxID] = 0.0
+            Enu_max[fluxID] = E_7Be_384
+        elif (flux_name == "7Be-861"):
+            Enu_min[fluxID] = 0.0
+            Enu_max[fluxID] = E_7Be_861
         else:
         
             #Read in data from file
