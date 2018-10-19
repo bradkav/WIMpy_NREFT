@@ -327,15 +327,20 @@ def dRdE_anapole(E, m_x, c_A, target, vlag=232.0, sigmav=156.0, vesc=544.0):
     
     alpha = 0.007297
     e = np.sqrt(4*np.pi*alpha)
+    gp = 5.59
+    gn = -3.83
     
     cn = np.zeros(11)
     cp = np.zeros(11)
+    
+
     
     #Operator 8
     cp[7] = -2.0*e*c_A
     
     #Operator 9
-    cp[8] = -2.0*e*c_A
+    cp[8] = -gp*c_A
+    cn[8] = -gn*c_A
     
     return dRdE_NREFT(E, m_x, cp, cn, target, vlag, sigmav, vesc)
     
