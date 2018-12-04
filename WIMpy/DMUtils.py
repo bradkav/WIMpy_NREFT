@@ -144,14 +144,65 @@ def calcSIFormFactor(E, m_N, old=False):
 #----------------------------------------------
     
 #--------------------------------------------------------
-# Standard Spin-Independent recoil rate
-# for a particle with (N_p,N_n) protons and neutrons
 def dRdE_standard(E, N_p, N_n, m_x, sig, vlag=232.0, sigmav=156.0, vesc=544.0):
+    """
+    Standard Spin-Independent recoil rate
+    for a particle with (N_p,N_n) protons and neutrons
+    ----------
+    * `E` [array]:
+      Recoil energies.
+    * `N_p` [integer]:
+      Number of protons in target nucleus.
+    * `N_n` [integer]:
+      Number of neutrons in target nucleus.
+    * `m_x` [float]:
+      Dark Matter mass in GeV.
+    * `sig` [float]:
+      Cross section in cm^{-2}.
+    * `vlag` [float]:
+      #FIXME: description
+    * `sigmav` [float]:
+      #FIXME: description
+    * `vesc` [float]:
+      #FIXME: description
+    Returns
+    -------
+    * `rate` [array like]:
+      Recoil rate in units of events/keV/kg/day.
+    """
     A = N_p + N_n   
     #print A
     int_factor = sig*calcSIFormFactor(E, A)*(A**2)
     
     return rate_prefactor(m_x)*int_factor*calcEta(vmin(E, A, m_x), vlag, sigmav, vesc)
+
+def dRdE_generic(E, N_p, N_n, m_x, sig, eta_func):
+    """
+    Generic Spin-Independent recoil rate
+    for a particle with (N_p,N_n) protons and neutrons.
+    Accepts generic velocity distribution.
+    ----------
+    * `E` [array]:
+      Recoil energies.
+    * `N_p` [integer]:
+      Number of protons in target nucleus.
+    * `N_n` [integer]:
+      Number of neutrons in target nucleus.
+    * `m_x` [float]:
+      Dark Matter mass in GeV.
+    * `sig` [float]:
+      Cross section in cm^{-2}.
+    * `eta_func` [function]:
+      Function that returns eta in s/km. #FIXME: units?
+    Returns
+    -------
+    * `rate` [array like]:
+      Recoil rate in units of events/keV/kg/day.
+    """
+    A = N_p + N_n   
+    int_factor = sig*calcSIFormFactor(E, A)*(A**2)
+    
+    return rate_prefactor(m_x)*int_factor*eta_func(vmin(E, A, m_x))
 
 #--------------------------------------------------------
 # Total number of events for standard SI DM
