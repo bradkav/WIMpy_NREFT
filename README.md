@@ -6,6 +6,8 @@ The `WIMpy_NREFT` code (also known as just `WIMpy`) allows you to calculate Dark
 
 The code currently supports operators <img src="https://rawgit.com/bradkav/WIMpy_NREFT/master/svgs/2330706abb8aba7916b511ca5afa9e62.svg?invert_in_darkmode" align=middle width=19.56603pt height=22.38192pt/> to <img src="https://rawgit.com/bradkav/WIMpy_NREFT/master/svgs/917244ca615745a80feccbe760feb728.svg?invert_in_darkmode" align=middle width=26.09409pt height=22.38192pt/>, as well as millicharged and magnetic dipole Dark Matter. The code can be used to generate spectra for Xenon, Argon, Carbon, Germanium, Iodine and Fluorine targets.
 
+`WIMpy_NREFT` now includes functionality to calculate *directional* recoil spectra, as well as signals from coherent neutrino-nucleus scattering (including fluxes from the Sun, atmosphere and diffuse supernovae).
+
 **Authors:** Bradley J Kavanagh, Tom D P Edwards.
 
 For questions, comments or bug reports, please contact Bradley J Kavanagh (bradkav@gmail.com).
@@ -29,8 +31,11 @@ from WIMpy import DMUtils as DMU
 ```
 
 For how to use the routines, there are a number of examples in the `Examples/` folder:
--  [`NREFT_example.ipynb`](Examples/NREFT_example.ipynb), which contains examples of how to use the different parts of the code, including calculating a range of spectra.  
-- [`Spectra.ipynb`](Examples/Spectra.ipynb), which can be used to generate plots of spectra for all NREFT operators and a range of experiments.
+
+*  [`NREFT_example.ipynb`](Examples/NREFT_example.ipynb), which contains examples of how to use the different parts of the code, including calculating a range of spectra.  
+* [`Spectra.ipynb`](Examples/Spectra.ipynb), which can be used to generate plots of spectra for all NREFT operators and a range of experiments.  
+* [`Directional.ipynb`](Examples/Directional.ipynb), which demonstrates how to calculate *directional* recoil spectra, as well as how to transform into different coordinate systems and account for *time-integrated* directionality.  
+* [`Neutrinos.ipynb`](Examples/Neutrinos.ipynb), which shows how to calculate neutrino-nucleus scattering spectra.
 
 More detailed documentation should be coming soon...
 
