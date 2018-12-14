@@ -14,7 +14,7 @@ from scipy.interpolate import interp1d,InterpolatedUnivariateSpline
 from numpy.random import rand
 from scipy.special import erf
 import os
-import DMUtils_relativistic as DMU_rel
+import WIMpy.DMUtils_relativistic as DMU_rel
 
 #Nuclear structure functions
 # import WD, WM, WMP2, WP1, WP2, WS1, WS2, WS1D
