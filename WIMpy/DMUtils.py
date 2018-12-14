@@ -14,6 +14,7 @@ from scipy.interpolate import interp1d,InterpolatedUnivariateSpline
 from numpy.random import rand
 from scipy.special import erf
 import os
+import DMUtils_relativistic as DMU_rel
 
 #Nuclear structure functions
 # import WD, WM, WMP2, WP1, WP2, WS1, WS2, WS1D
@@ -268,7 +269,7 @@ def dRdE_generic(E, N_p, N_n, m_x, sig, eta_func):
     A = N_p + N_n   
     int_factor = sig*calcSIFormFactor(E, A)*(A**2)
     
-    return rate_prefactor(m_x)*int_factor*eta_func(vmin(E, A, m_x))
+    return rate_prefactor(m_x)*int_factor*eta_func(DMU_rel.vmin_rel(E, A, m_x))
 
 #--------------------------------------------------------
 # Total number of events for standard SI DM
