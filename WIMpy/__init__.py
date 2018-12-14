@@ -1,4 +1,5 @@
 import WIMpy.DMUtils
+import WIMpy.DMUtils_relativistic
 import WIMpy.WD
 import WIMpy.WM
 import WIMpy.WMP2
