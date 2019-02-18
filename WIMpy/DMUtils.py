@@ -701,7 +701,7 @@ def xsec_CEvNS(E_R, E_nu, N_p, N_n):
     return xsec_SM*1e-6*(1.98e-14)*(1.98e-14)*calcSIFormFactor(E_R, A)
     
 #Calculate recoil rate (in events/kg/keV/day)
-def dRdE_CEvNS(E_R, N_p, N_n, flux_name="all"):
+def dRdE_CEvNS(E_R, N_p, N_n, flux_name="all", flux_func=None):
     """
     Calculates the differential recoil rate for
     Coherent Elastic Neutrino-Nucleus Scattering
@@ -721,6 +721,12 @@ def dRdE_CEvNS(E_R, N_p, N_n, flux_name="all"):
     flux_name : string
         Which neutrino flux to consider:
         'DSNB', 'atm', 'hep', '8B', '15O', '17F' or 'all'
+        Alternatively, set flux_name = "user"
+    flux_interp : function
+        Function which returns the neutrino_flux
+        in units of neutrinos/cm^2/s/MeV with input E, in MeV
+        This is ignored unless flux_name = "user".
+        In this case, the code integrates between 0 and 100 MeV.
     
     Returns
     -------
@@ -730,10 +736,30 @@ def dRdE_CEvNS(E_R, N_p, N_n, flux_name="all"):
     """
 
     A = N_p + N_n
+    m_N = A*1.66054e-27 #Nucleus mass in kg
+    
+    #Minimum neutrino energy required (in MeV)
+    E_min = np.sqrt(A*0.9315*E_R/2)
+    
+    #Check to see if the user specified a flux function
+    if (flux_name == "user"):
+        #E_min = np.maximum(E_min, 1.0)
+        E_max = 100.0 #MeV
+        
+        if (E_min > E_max):
+            return 0
+        
+        integrand = lambda E_nu: xsec_CEvNS(E_R, E_nu, N_p, N_n)\
+                            *flux_func(E_nu)
+                            
+        rate = quad(integrand, E_min, E_max, epsrel=1e-4)[0]/m_N
+    
+        return 86400.0*rate #Convert from (per second) to (per day)
 
+    #Otherwise, use one of the pre-defined fluxes
     if (flux_name not in nu_source_list.keys() and flux_name != "all"):
         print("    DMUtils.py: dRdE_CEvNS: flux_name <" + flux_name + "> is not valid.")
-        print("    Valid options are 'DSNB', 'atm', 'hep', '8B', '15O', '17F', '13N', 'pep' and 'all'...")
+        print("    Valid options are 'DSNB', 'atm', 'hep', '8B', '15O', '17F', '13N', 'pep', 'all' and 'user'...")
         raise SystemExit
 
     #If 'all' just recursively call all the relevant flux types and add them
@@ -750,11 +776,6 @@ def dRdE_CEvNS(E_R, N_p, N_n, flux_name="all"):
     if (neutrino_flux_list == None):
         print(" DMutils.py: Loading neutrino flux for the first time...")
         loadNeutrinoFlux()
-    
-    m_N = A*1.66054e-27 #Nucleus mass in kg
-    
-    #Minimum neutrino energy required (in MeV)
-    E_min = np.sqrt(A*0.9315*E_R/2)
     
     E_min = np.maximum(E_min, Enu_min[fluxID])
     
