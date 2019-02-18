@@ -722,7 +722,7 @@ def dRdE_CEvNS(E_R, N_p, N_n, flux_name="all", flux_func=None):
         Which neutrino flux to consider:
         'DSNB', 'atm', 'hep', '8B', '15O', '17F' or 'all'
         Alternatively, set flux_name = "user"
-    flux_interp : function
+    flux_func : function
         Function which returns the neutrino_flux
         in units of neutrinos/cm^2/s/MeV with input E, in MeV
         This is ignored unless flux_name = "user".
