@@ -86,14 +86,14 @@ def calcEta(vmin, vlag=230.0, sigmav=156.0,vesc=544.0):
     
     vel_integral = 0
     
-    N = 1.0/(erf(aesc) - np.sqrt(2.0/np.pi)*(vesc/sigmav)*np.exp(-0.5*(vesc/sigmav)**2))
+    N_esc = erf(aesc) - np.sqrt(2.0/np.pi)*(vesc/sigmav)*np.exp(-aesc**2)
     
     vel_integral = (0.5/vlag)*(erf(aplus) - erf(aminus))
     vel_integral -= (1.0/(np.sqrt(np.pi)*vlag))*(aplus - aminus)*np.exp(-0.5*(vesc/sigmav)**2)
     
     vel_integral = np.clip(vel_integral, 0, 1e30)
 
-    return N*vel_integral
+    return (1/N_esc)*vel_integral
     
 #---------------------------------------------------------
 # Modified velocity integral
@@ -104,16 +104,18 @@ def calcMEta(vmin, vlag=230.0, sigmav=156.0,vesc=544.0):
     aplus = np.minimum((vmin+vlag), vmin*0.0 + vesc)/v0
     aminus = np.minimum((vmin-vlag), vmin*0.0 + vesc)/v0
     aesc = vesc/v0
-    aE = vlag/v0
+    alag = vlag/v0
     
-    N = 1.0/(erf(aesc) - np.sqrt(2.0/np.pi)*(vesc/sigmav)*np.exp(-0.5*(vesc/sigmav)**2))
+    N_esc = erf(aesc) - np.sqrt(2.0/np.pi)*(vesc/sigmav)*np.exp(-aesc**2)
+    Norm = ((2*sigma_v**2)/(np.sqrt(np.pi)*vlag*N_esc))
     
-    A = v0*((aminus/(2*np.sqrt(pi)*aE) + pi**-0.5)*np.exp(-aminus**2) - (aplus/(2*np.sqrt(pi)*aE) - pi**-0.5)*np.exp(-aplus**2))   
-    B = (v0/(4.0*aE))*(1+2.0*aE**2)*(erf(aplus) - erf(aminus))
-    C = -(v0*pi**-0.5)*(2 + (1/(3.0*aE))*((amin + aesc - aminus)**3 - (amin + aesc - aplus)**3))*np.exp(-aesc**2)
+    A = (np.sqrt(np.pi)/4)*(2*alag**2 + 1)*(erf(aplus) - erf(aminus))
+    B = 0.5*(aminus + 2*alag)*np.exp(-aminus**2) - 0.5*(aplus - 2*alag)*np.exp(-aplus**2)
+    C = -(1/3)*(6*alag + (amin + aesc - aminus)**3 - (amin + aesc - aplus)**3)*np.exp(-aesc**2)
     
-    return (np.clip((A+B+C)*N - vmin**2*calcEta(vmin,vlag,sigmav,vesc), 0, 1e10))/((3e5**2))
-#NB: Corrected a minor (roughly factor of 2) error in calcMeta  - BJK 26/07/2018
+    return (np.clip((A+B+C)*Norm - vmin**2*calcEta(vmin,vlag,sigmav,vesc), 0, 1e10))/((3e5**2))
+#BJK 26/07/2018: Corrected a minor (roughly factor of 2) error in calcMeta 
+#BJK 23/11/2021: Re-wrote calcMeta to be a bit clearer
 
 
 #---------------------------------------------------------
