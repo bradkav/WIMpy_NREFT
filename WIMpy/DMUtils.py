@@ -78,20 +78,26 @@ rho0 = 0.3 #GeV/cm^3
 
 #---------------------------------------------------------
 # Velocity integral eta
-def calcEta(vmin, vlag=230.0, sigmav=156.0,vesc=544.0):
+def calcEta(vmin, vlag=230.0, sigmav=156.0,vesc=544.0, lowered=False):
     
     aplus = np.minimum((vmin+vlag), vmin*0.0 + vesc)/(np.sqrt(2)*sigmav)
     aminus = np.minimum((vmin-vlag), vmin*0.0 + vesc)/(np.sqrt(2)*sigmav)
     aesc = vesc/(np.sqrt(2)*sigmav)
     
+    if (lowered):
+        beta = 1.0
+    else:
+        beta = 0.0
+    
     vel_integral = 0
     
-    N_esc = erf(aesc) - np.sqrt(2.0/np.pi)*(vesc/sigmav)*np.exp(-aesc**2)
+    N_esc = erf(aesc) - (2.0/3.0)*np.sqrt(1/np.pi)*aesc*(3.0 + 2.0*beta*aesc**2)*np.exp(-aesc**2)
+
+
+    A = (0.5/vlag)*(erf(aplus) - erf(aminus))
+    B = -(1.0/(np.sqrt(np.pi)*vlag))*(aplus - aminus)*np.exp(-0.5*(vesc/sigmav)**2)*(1 - (beta/3)*(aplus**2 + aplus*aminus + aminus**2 - 3*aesc**2))
     
-    vel_integral = (0.5/vlag)*(erf(aplus) - erf(aminus))
-    vel_integral -= (1.0/(np.sqrt(np.pi)*vlag))*(aplus - aminus)*np.exp(-0.5*(vesc/sigmav)**2)
-    
-    vel_integral = np.clip(vel_integral, 0, 1e30)
+    vel_integral = np.clip(A+B, 0, 1e30)
 
     return (1/N_esc)*vel_integral
     
