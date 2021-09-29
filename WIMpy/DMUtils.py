@@ -93,7 +93,6 @@ def calcEta(vmin, vlag=230.0, sigmav=156.0,vesc=544.0, lowered=False):
     
     N_esc = erf(aesc) - (2.0/3.0)*np.sqrt(1/np.pi)*aesc*(3.0 + 2.0*beta*aesc**2)*np.exp(-aesc**2)
 
-
     A = (0.5/vlag)*(erf(aplus) - erf(aminus))
     B = -(1.0/(np.sqrt(np.pi)*vlag))*(aplus - aminus)*np.exp(-0.5*(vesc/sigmav)**2)*(1 - (beta/3)*(aplus**2 + aplus*aminus + aminus**2 - 3*aesc**2))
     
@@ -104,6 +103,7 @@ def calcEta(vmin, vlag=230.0, sigmav=156.0,vesc=544.0, lowered=False):
 #---------------------------------------------------------
 # Modified velocity integral
 # See e.g. Appendix A in https://arxiv.org/abs/1307.5955
+# Or see Chapter I of the monstrous Appendiciario: https://arxiv.org/abs/2104.12785
 def calcMEta(vmin, vlag=230.0, sigmav=156.0,vesc=544.0):
     v0 = np.sqrt(2.0)*sigmav
     amin = vmin/v0
@@ -113,7 +113,7 @@ def calcMEta(vmin, vlag=230.0, sigmav=156.0,vesc=544.0):
     alag = vlag/v0
     
     N_esc = erf(aesc) - np.sqrt(2.0/np.pi)*(vesc/sigmav)*np.exp(-aesc**2)
-    Norm = ((2*sigma_v**2)/(np.sqrt(np.pi)*vlag*N_esc))
+    Norm = ((2*sigmav**2)/(np.sqrt(np.pi)*vlag*N_esc))
     
     A = (np.sqrt(np.pi)/4)*(2*alag**2 + 1)*(erf(aplus) - erf(aminus))
     B = 0.5*(aminus + 2*alag)*np.exp(-aminus**2) - 0.5*(aplus - 2*alag)*np.exp(-aplus**2)
@@ -121,7 +121,7 @@ def calcMEta(vmin, vlag=230.0, sigmav=156.0,vesc=544.0):
     
     return (np.clip((A+B+C)*Norm - vmin**2*calcEta(vmin,vlag,sigmav,vesc), 0, 1e10))/((3e5**2))
 #BJK 26/07/2018: Corrected a minor (roughly factor of 2) error in calcMeta 
-#BJK 23/11/2021: Re-wrote calcMeta to be a bit clearer
+#BJK 23/09/2021: Re-wrote calcMeta to be a bit clearer
 
 
 #---------------------------------------------------------

@@ -9,4 +9,4 @@ import WIMpy.WS1
 import WIMpy.WS2
 import WIMpy.WS1D
 import WIMpy.LabFuncs
-__version__ = '1.1.0'
+__version__ = '1.1.1'
