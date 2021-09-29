@@ -13,7 +13,7 @@ The code currently supports operators <img src="https://rawgit.com/bradkav/WIMpy
 For questions, comments or bug reports, please contact Bradley J Kavanagh (bradkav@gmail.com).
 
 **Updates:**
-* 22/09/2021: **Version 1.1** - Some operators were missing powers of (q/mN)^2 in the rate calculation, which has now been corrected.  
+* 29/09/2021: **Version 1.1** - Some operators were missing powers of (q/mN)^2 in the rate calculation, which has now been corrected.  
 
 ### Installation
 
@@ -58,7 +58,7 @@ The corresponding bibtex is:
 ```
 @misc{WIMpy-code,
 author = {Kavanagh, Bradley J. and Edwards, Thomas D. P.},
-title = {\textnormal{WIMpy\_NREFT v1.0 [Computer Software]}, \href{https://doi.org/10.5281/zenodo.1230503}{\textnormal{doi:10.5281/zenodo.1230503}}\textnormal{. Available at }\url{https://github.com/bradkav/WIMpy_NREFT}},
+title = {\textnormal{WIMpy\_NREFT v1.1 [Computer Software]}, \href{https://doi.org/10.5281/zenodo.1230503}{\textnormal{doi:10.5281/zenodo.1230503}}\textnormal{. Available at }\url{https://github.com/bradkav/WIMpy_NREFT}},
 year = {2018}
 }
 ```
