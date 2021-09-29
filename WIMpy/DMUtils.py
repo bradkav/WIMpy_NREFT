@@ -5,7 +5,7 @@
 #
 # Author: Bradley J Kavanagh
 # Email: bradkav@gmail.com
-# Last updated: 26/07/2018
+# Last updated: 22/09/2021
 
 import numpy as np
 from numpy import pi, cos, sin
@@ -78,41 +78,50 @@ rho0 = 0.3 #GeV/cm^3
 
 #---------------------------------------------------------
 # Velocity integral eta
-def calcEta(vmin, vlag=230.0, sigmav=156.0,vesc=544.0):
+def calcEta(vmin, vlag=230.0, sigmav=156.0,vesc=544.0, lowered=False):
     
     aplus = np.minimum((vmin+vlag), vmin*0.0 + vesc)/(np.sqrt(2)*sigmav)
     aminus = np.minimum((vmin-vlag), vmin*0.0 + vesc)/(np.sqrt(2)*sigmav)
     aesc = vesc/(np.sqrt(2)*sigmav)
     
+    if (lowered):
+        beta = 1.0
+    else:
+        beta = 0.0
+    
     vel_integral = 0
     
-    N = 1.0/(erf(aesc) - np.sqrt(2.0/np.pi)*(vesc/sigmav)*np.exp(-0.5*(vesc/sigmav)**2))
-    
-    vel_integral = (0.5/vlag)*(erf(aplus) - erf(aminus))
-    vel_integral -= (1.0/(np.sqrt(np.pi)*vlag))*(aplus - aminus)*np.exp(-0.5*(vesc/sigmav)**2)
-    
-    vel_integral = np.clip(vel_integral, 0, 1e30)
+    N_esc = erf(aesc) - (2.0/3.0)*np.sqrt(1/np.pi)*aesc*(3.0 + 2.0*beta*aesc**2)*np.exp(-aesc**2)
 
-    return N*vel_integral
+
+    A = (0.5/vlag)*(erf(aplus) - erf(aminus))
+    B = -(1.0/(np.sqrt(np.pi)*vlag))*(aplus - aminus)*np.exp(-0.5*(vesc/sigmav)**2)*(1 - (beta/3)*(aplus**2 + aplus*aminus + aminus**2 - 3*aesc**2))
+    
+    vel_integral = np.clip(A+B, 0, 1e30)
+
+    return (1/N_esc)*vel_integral
     
 #---------------------------------------------------------
 # Modified velocity integral
+# See e.g. Appendix A in https://arxiv.org/abs/1307.5955
 def calcMEta(vmin, vlag=230.0, sigmav=156.0,vesc=544.0):
     v0 = np.sqrt(2.0)*sigmav
     amin = vmin/v0
     aplus = np.minimum((vmin+vlag), vmin*0.0 + vesc)/v0
     aminus = np.minimum((vmin-vlag), vmin*0.0 + vesc)/v0
     aesc = vesc/v0
-    aE = vlag/v0
+    alag = vlag/v0
     
-    N = 1.0/(erf(aesc) - np.sqrt(2.0/np.pi)*(vesc/sigmav)*np.exp(-0.5*(vesc/sigmav)**2))
+    N_esc = erf(aesc) - np.sqrt(2.0/np.pi)*(vesc/sigmav)*np.exp(-aesc**2)
+    Norm = ((2*sigma_v**2)/(np.sqrt(np.pi)*vlag*N_esc))
     
-    A = v0*((aminus/(2*np.sqrt(pi)*aE) + pi**-0.5)*np.exp(-aminus**2) - (aplus/(2*np.sqrt(pi)*aE) - pi**-0.5)*np.exp(-aplus**2))   
-    B = (v0/(4.0*aE))*(1+2.0*aE**2)*(erf(aplus) - erf(aminus))
-    C = -(v0*pi**-0.5)*(2 + (1/(3.0*aE))*((amin + aesc - aminus)**3 - (amin + aesc - aplus)**3))*np.exp(-aesc**2)
+    A = (np.sqrt(np.pi)/4)*(2*alag**2 + 1)*(erf(aplus) - erf(aminus))
+    B = 0.5*(aminus + 2*alag)*np.exp(-aminus**2) - 0.5*(aplus - 2*alag)*np.exp(-aplus**2)
+    C = -(1/3)*(6*alag + (amin + aesc - aminus)**3 - (amin + aesc - aplus)**3)*np.exp(-aesc**2)
     
-    return (np.clip((A+B+C)*N - vmin**2*calcEta(vmin,vlag,sigmav,vesc), 0, 1e10))/((3e5**2))
-#NB: Corrected a minor (roughly factor of 2) error in calcMeta  - BJK 26/07/2018
+    return (np.clip((A+B+C)*Norm - vmin**2*calcEta(vmin,vlag,sigmav,vesc), 0, 1e10))/((3e5**2))
+#BJK 26/07/2018: Corrected a minor (roughly factor of 2) error in calcMeta 
+#BJK 23/11/2021: Re-wrote calcMeta to be a bit clearer
 
 
 #---------------------------------------------------------
@@ -302,7 +311,7 @@ def dRdE_NREFT(E, m_x, cp, cn, target, vlag=232.0, sigmav=156.0, vesc=544.0):
     b = np.sqrt(41.467/(45*A**(-1.0/3.0) - 25*A**(-2.0/3.0)))
     y = (q2*b/2)**2
     
-    #Dark matter spin factor
+    #Dark matter spin factor (assume spin-1/2)
     jx = 0.5
     jfac = jx*(jx+1.0)
     
@@ -323,13 +332,6 @@ def dRdE_NREFT(E, m_x, cp, cn, target, vlag=232.0, sigmav=156.0, vesc=544.0):
                         + meta*c1[7]*c2[7] + qr**2*eta*c1[10]*c2[10])
             rate += R_M*np.vectorize(WM.calcwm)(tau1, tau2, y, target)
     
-            R_P2 = 0.25*qr**2*c1[2]*c2[2]*eta
-            rate += R_P2*np.vectorize(WP2.calcwp2)(tau1, tau2, y, target)
-    
-            #Watch out, this one is the wrong way round...
-            R_P2M = eta*c1[2]*c2[0]
-            rate += R_P2M*np.vectorize(WMP2.calcwmp2)(tau1, tau2, y, target)
-    
             R_S2 = eta*c1[9]*c2[9]*0.25*qr**2 + eta*jfac/12.0*(c1[3]*c2[3] + \
                         qr**2*(c1[3]*c2[5] + c1[5]*c2[3]) + qr**4*c1[5]*c2[5])
             rate += R_S2*np.vectorize(WS2.calcws2)(tau1, tau2, y, target)
@@ -338,12 +340,21 @@ def dRdE_NREFT(E, m_x, cp, cn, target, vlag=232.0, sigmav=156.0, vesc=544.0):
                         jfac/12.0*eta*(c1[3]*c2[3] + qr**2*c1[8]*c2[8])
             rate += R_S1*np.vectorize(WS1.calcws1)(tau1, tau2, y, target)
     
+            #--- The response functions are suppressed by an extra power of (q/m_N)^2, see e.g. Eq. (3.23) in https://arxiv.org/abs/1501.03729
+            
+            R_P2 = 0.25*qr**2*c1[2]*c2[2]*eta
+            rate += qr**2*R_P2*np.vectorize(WP2.calcwp2)(tau1, tau2, y, target)
+    
+            #Watch out, this one is the wrong way round...
+            R_P2M = eta*c1[2]*c2[0]
+            rate += qr**2*R_P2M*np.vectorize(WMP2.calcwmp2)(tau1, tau2, y, target)
+    
             R_D = jfac/3.0*eta*(qr**2*c1[4]*c2[4] + c1[7]*c2[7])
-            rate += R_D*np.vectorize(WD.calcwd)(tau1, tau2, y, target)
+            rate += qr**2*R_D*np.vectorize(WD.calcwd)(tau1, tau2, y, target)
     
             #This one might be flipped too
             R_S1D = jfac/3.0*eta*(c1[4]*c2[3] - c1[7]*c2[8])
-            rate += R_S1D*np.vectorize(WS1D.calcws1d)(tau1, tau2, y, target)
+            rate += qr**2*R_S1D*np.vectorize(WS1D.calcws1d)(tau1, tau2, y, target)
 
     conv = (rho0/2./np.pi/m_x)*1.69612985e14 # 1 GeV^-4 * cm^-3 * km^-1 * s * c^6 * hbar^2 to keV^-1 kg^-1 day^-1
 
@@ -593,13 +604,6 @@ def dRdEdOmega_NREFT(E, theta, m_x, cp, cn, target, vlag=232.0, sigmav=156.0, ve
                         + MRT*c1[7]*c2[7] + qr**2*RT*c1[10]*c2[10])
             rate += R_M*np.vectorize(WM.calcwm)(tau1, tau2, y, target)
     
-            R_P2 = 0.25*qr**2*c1[2]*c2[2]*RT
-            rate += R_P2*np.vectorize(WP2.calcwp2)(tau1, tau2, y, target)
-    
-            #Watch out, this one is the wrong way round...
-            R_P2M = RT*c1[2]*c2[0]
-            rate += R_P2M*np.vectorize(WMP2.calcwmp2)(tau1, tau2, y, target)
-    
             R_S2 = RT*c1[9]*c2[9]*0.25*qr**2 + RT*jfac/12.0*(c1[3]*c2[3] + \
                         qr**2*(c1[3]*c2[5] + c1[5]*c2[3]) + qr**4*c1[5]*c2[5])
             rate += R_S2*np.vectorize(WS2.calcws2)(tau1, tau2, y, target)
@@ -607,13 +611,23 @@ def dRdEdOmega_NREFT(E, theta, m_x, cp, cn, target, vlag=232.0, sigmav=156.0, ve
             R_S1 = (1.0/8.0)*MRT*(qr**2*c1[2]*c2[2] + c1[6]*c2[6]) +\
                         jfac/12.0*RT*(c1[3]*c2[3] + qr**2*c1[8]*c2[8])
             rate += R_S1*np.vectorize(WS1.calcws1)(tau1, tau2, y, target)
+            
+            #--- The response functions are suppressed by an extra power of (q/m_N)^2, see e.g. Eq. (3.23) in https://arxiv.org/abs/1501.03729
+    
+            R_P2 = 0.25*qr**2*c1[2]*c2[2]*RT
+            rate += qr**2*R_P2*np.vectorize(WP2.calcwp2)(tau1, tau2, y, target)
+    
+            #Watch out, this one is the wrong way round...
+            R_P2M = RT*c1[2]*c2[0]
+            rate += qr**2*R_P2M*np.vectorize(WMP2.calcwmp2)(tau1, tau2, y, target)
+
     
             R_D = jfac/3.0*RT*(qr**2*c1[4]*c2[4] + c1[7]*c2[7])
-            rate += R_D*np.vectorize(WD.calcwd)(tau1, tau2, y, target)
+            rate += qr**2*R_D*np.vectorize(WD.calcwd)(tau1, tau2, y, target)
     
             #This one might be flipped too
             R_S1D = jfac/3.0*RT*(c1[4]*c2[3] - c1[7]*c2[8])
-            rate += R_S1D*np.vectorize(WS1D.calcws1d)(tau1, tau2, y, target)
+            rate += qr**2*R_S1D*np.vectorize(WS1D.calcws1d)(tau1, tau2, y, target)
 
     conv = (rho0/2./np.pi/m_x)*1.69612985e14 # 1 GeV^-4 * cm^-3 * km^-1 * s * c^6 * hbar^2 to keV^-1 kg^-1 day^-1
 
