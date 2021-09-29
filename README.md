@@ -13,7 +13,7 @@ The code currently supports operators <img src="https://rawgit.com/bradkav/WIMpy
 For questions, comments or bug reports, please contact Bradley J Kavanagh (bradkav@gmail.com).
 
 **Updates:**
-* 22/09/2021: Some operators were missing powers of (q/mN)^2 in the rate calculation, which has now been corrected.  
+* 22/09/2021: **Version 1.1** - Some operators were missing powers of (q/mN)^2 in the rate calculation, which has now been corrected.  
 
 ### Installation
 
