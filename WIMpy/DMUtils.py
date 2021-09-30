@@ -333,7 +333,7 @@ def dRdE_NREFT(E, m_x, cp, cn, target, vlag=232.0, sigmav=156.0, vesc=544.0):
             rate += R_M*np.vectorize(WM.calcwm)(tau1, tau2, y, target)
     
             R_S2 = eta*c1[9]*c2[9]*0.25*qr**2 + jfac/12.0*(eta*c1[3]*c2[3] + \
-                        eta*qr**2*(c1[3]*c2[5] + c1[5]*c2[3]) + eta*qr**4*c1[5]*c2[5]) \
+                        eta*qr**2*(c1[3]*c2[5] + c1[5]*c2[3]) + eta*qr**4*c1[5]*c2[5] \
                          + meta*c1[11]*c2[11] + meta*qr**2*c1[12]*c2[12])
             rate += R_S2*np.vectorize(WS2.calcws2)(tau1, tau2, y, target)
     
