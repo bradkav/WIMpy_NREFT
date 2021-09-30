@@ -318,8 +318,8 @@ def dRdE_NREFT(E, m_x, cp, cn, target, vlag=232.0, sigmav=156.0, vesc=544.0):
     rate = E*0.0
     
     
-    c_sum = [cp[i] + cn[i] for i in range(11)]
-    c_diff = [cp[i] - cn[i] for i in range(11)]
+    c_sum = [cp[i] + cn[i] for i in range(15)]
+    c_diff = [cp[i] - cn[i] for i in range(15)]
     c = [c_sum, c_diff]
     
     for tau1 in [0,1]:
@@ -332,27 +332,30 @@ def dRdE_NREFT(E, m_x, cp, cn, target, vlag=232.0, sigmav=156.0, vesc=544.0):
                         + meta*c1[7]*c2[7] + qr**2*eta*c1[10]*c2[10])
             rate += R_M*np.vectorize(WM.calcwm)(tau1, tau2, y, target)
     
-            R_S2 = eta*c1[9]*c2[9]*0.25*qr**2 + eta*jfac/12.0*(c1[3]*c2[3] + \
-                        qr**2*(c1[3]*c2[5] + c1[5]*c2[3]) + qr**4*c1[5]*c2[5])
+            R_S2 = eta*c1[9]*c2[9]*0.25*qr**2 + jfac/12.0*(eta*c1[3]*c2[3] + \
+                        eta*qr**2*(c1[3]*c2[5] + c1[5]*c2[3]) + eta*qr**4*c1[5]*c2[5]) \
+                         + meta*c1[11]*c2[11] + meta*qr**2*c1[12]*c2[12])
             rate += R_S2*np.vectorize(WS2.calcws2)(tau1, tau2, y, target)
     
             R_S1 = (1.0/8.0)*meta*(qr**2*c1[2]*c2[2] + c1[6]*c2[6]) +\
-                        jfac/12.0*eta*(c1[3]*c2[3] + qr**2*c1[8]*c2[8])
+                        jfac/12.0*(  \
+                            eta*c1[3]*c2[3] + eta*qr**2*c1[8]*c2[8] +\
+                            0.5*meta*(c1[11] - qr**2*c1[14])*(c2[11] - qr**2*c2[14]) +\
+                            0.5*meta*qr**2*c1[13]*c2[13] \
+                        )
             rate += R_S1*np.vectorize(WS1.calcws1)(tau1, tau2, y, target)
     
-            #--- The response functions are suppressed by an extra power of (q/m_N)^2, see e.g. Eq. (3.23) in https://arxiv.org/abs/1501.03729
+            #--- These response functions are suppressed by an extra power of (q/m_N)^2, see e.g. Eq. (3.23) in https://arxiv.org/abs/1501.03729
             
-            R_P2 = 0.25*qr**2*c1[2]*c2[2]*eta
+            R_P2 = 0.25*qr**2*c1[2]*c2[2]*eta + (jfac/12.0)*eta*(c1[11] - qr**2*c1[14])*(c2[11] - qr**2*c2[14])
             rate += qr**2*R_P2*np.vectorize(WP2.calcwp2)(tau1, tau2, y, target)
     
-            #Watch out, this one is the wrong way round...
-            R_P2M = eta*c1[2]*c2[0]
+            R_P2M = eta*c1[2]*c2[0] + eta*(jfac/3.0)*(c1[11] - qr**2*c1[14])*c2[10]
             rate += qr**2*R_P2M*np.vectorize(WMP2.calcwmp2)(tau1, tau2, y, target)
     
             R_D = jfac/3.0*eta*(qr**2*c1[4]*c2[4] + c1[7]*c2[7])
             rate += qr**2*R_D*np.vectorize(WD.calcwd)(tau1, tau2, y, target)
     
-            #This one might be flipped too
             R_S1D = jfac/3.0*eta*(c1[4]*c2[3] - c1[7]*c2[8])
             rate += qr**2*R_S1D*np.vectorize(WS1D.calcws1d)(tau1, tau2, y, target)
 
@@ -454,8 +457,8 @@ def dRdE_magnetic(E, m_x, mu_x, target, vlag=232.0, sigmav=156.0, vesc=544.0):
     #muB     = 5.7883818e-5*eV/Tesla # Bohr magneton
     mu_B = 297.45 #GeV^-1 (in natural units (with e = sqrt(4 pi alpha)))
 
-    cp = [E*0.0 for i in range(11)]
-    cn = [E*0.0 for i in range(11)]
+    cp = [E*0.0 for i in range(15)]
+    cn = [E*0.0 for i in range(15)]
     
     #Operator 1
     cp[0] = e*(mu_x*mu_B)/(2.0*m_x)
@@ -590,8 +593,8 @@ def dRdEdOmega_NREFT(E, theta, m_x, cp, cn, target, vlag=232.0, sigmav=156.0, ve
     rate = E*0.0
     
     
-    c_sum = [cp[i] + cn[i] for i in range(11)]
-    c_diff = [cp[i] - cn[i] for i in range(11)]
+    c_sum = [cp[i] + cn[i] for i in range(15)]
+    c_diff = [cp[i] - cn[i] for i in range(15)]
     c = [c_sum, c_diff]
     
     for tau1 in [0,1]:
@@ -604,28 +607,32 @@ def dRdEdOmega_NREFT(E, theta, m_x, cp, cn, target, vlag=232.0, sigmav=156.0, ve
                         + MRT*c1[7]*c2[7] + qr**2*RT*c1[10]*c2[10])
             rate += R_M*np.vectorize(WM.calcwm)(tau1, tau2, y, target)
     
-            R_S2 = RT*c1[9]*c2[9]*0.25*qr**2 + RT*jfac/12.0*(c1[3]*c2[3] + \
-                        qr**2*(c1[3]*c2[5] + c1[5]*c2[3]) + qr**4*c1[5]*c2[5])
+            R_S2 = RT*c1[9]*c2[9]*0.25*qr**2 + jfac/12.0*( \
+                        RT*c1[3]*c2[3] + RT*qr**2*(c1[3]*c2[5] + c1[5]*c2[3]) + \
+                        RT*qr**4*c1[5]*c2[5] + MRT*c1[11]*c2[11] + MRT*qr**2*c1[12]*c2[12] \
+                        )
             rate += R_S2*np.vectorize(WS2.calcws2)(tau1, tau2, y, target)
     
             R_S1 = (1.0/8.0)*MRT*(qr**2*c1[2]*c2[2] + c1[6]*c2[6]) +\
-                        jfac/12.0*RT*(c1[3]*c2[3] + qr**2*c1[8]*c2[8])
+                        jfac/12.0*( \
+                        RT*c1[3]*c2[3] + RT*qr**2*c1[8]*c2[8] + \
+                        0.5*MRT*(c1[11]- qr**2*c1[14])*(c2[11]- qr**2*c2[14]) + \
+                        0.5*MRT*qr**2*c1[13]*c2[13] \
+                        )
             rate += R_S1*np.vectorize(WS1.calcws1)(tau1, tau2, y, target)
             
             #--- The response functions are suppressed by an extra power of (q/m_N)^2, see e.g. Eq. (3.23) in https://arxiv.org/abs/1501.03729
     
-            R_P2 = 0.25*qr**2*c1[2]*c2[2]*RT
+            R_P2 = 0.25*qr**2*c1[2]*c2[2]*RT + (jfac/12.0)*RT*(c1[11] - qr**2*c1[14])*(c2[11] - qr**2 - c2[14])
             rate += qr**2*R_P2*np.vectorize(WP2.calcwp2)(tau1, tau2, y, target)
     
-            #Watch out, this one is the wrong way round...
-            R_P2M = RT*c1[2]*c2[0]
+            R_P2M = RT*c1[2]*c2[0] + (jfac/3.0)*RT*(c1[11] - qr**2*c1[14])*c2[10]
             rate += qr**2*R_P2M*np.vectorize(WMP2.calcwmp2)(tau1, tau2, y, target)
 
     
             R_D = jfac/3.0*RT*(qr**2*c1[4]*c2[4] + c1[7]*c2[7])
             rate += qr**2*R_D*np.vectorize(WD.calcwd)(tau1, tau2, y, target)
     
-            #This one might be flipped too
             R_S1D = jfac/3.0*RT*(c1[4]*c2[3] - c1[7]*c2[8])
             rate += qr**2*R_S1D*np.vectorize(WS1D.calcws1d)(tau1, tau2, y, target)
 
