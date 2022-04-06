@@ -45,7 +45,6 @@ J_list = np.loadtxt(os.path.dirname(os.path.realpath(__file__)) + "/Nuclei.txt",
 Jvals = dict(zip(target_list, J_list))
 Avals = dict(zip(target_list, A_list))
 
-
 #---------------------------------------------
 #----- Global variables for neutrino fluxes---
 #---------------------------------------------
@@ -396,8 +395,8 @@ def dRdE_anapole(E, m_x, c_A, target, vlag=232.0, sigmav=156.0, vesc=544.0):
     gp = 5.59
     gn = -3.83
     
-    cn = np.zeros(11)
-    cp = np.zeros(11)
+    cn = np.zeros(15)
+    cp = np.zeros(15)
     
 
     
