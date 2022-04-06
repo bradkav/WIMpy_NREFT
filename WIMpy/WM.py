@@ -531,5 +531,5 @@ dispatchtable['Ge73'] = Ge73
 dispatchtable['Ge74'] = Ge74
 dispatchtable['Ge76'] = Ge76
 dispatchtable['Na23'] = Na23
-dispatchtable['Iodine'] = Iodine
-dispatchtable['Fluorine'] = Fluorine
+dispatchtable['I127'] = Iodine
+dispatchtable['F19'] = Fluorine

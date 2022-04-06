@@ -198,5 +198,5 @@ dispatchtable['Xe129'] = Xe129
 dispatchtable['Xe131'] = Xe131
 dispatchtable['Ge73'] = Ge73
 dispatchtable['Na23'] = Na23
-dispatchtable['Iodine'] = Iodine
-dispatchtable['Fluorine'] = Fluorine
+dispatchtable['I127'] = Iodine
+dispatchtable['F19'] = Fluorine
