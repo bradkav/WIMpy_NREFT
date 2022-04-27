@@ -13,7 +13,8 @@ The code currently supports operators <img src="https://rawgit.com/bradkav/WIMpy
 For questions, comments or bug reports, please contact Bradley J Kavanagh (bradkav@gmail.com).
 
 **Updates:**
-* 06/04/2022: **Version 2.2** - Added new targets to Nuclei.txt.
+* 27/04/2022: Fixed some bugs with incorrect nuclear response functions (this should only affect relatively rare parameter combinations for certain elements)
+* 06/04/2022: **Version 1.2** - Added new targets to Nuclei.txt.
 * 29/09/2021: **Version 1.1** - Some operators were missing powers of (q/mN)^2 in the rate calculation, which has now been corrected.  
 
 ### Installation

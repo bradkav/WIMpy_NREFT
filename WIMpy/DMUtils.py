@@ -350,13 +350,13 @@ def dRdE_NREFT(E, m_x, cp, cn, target, vlag=232.0, sigmav=156.0, vesc=544.0):
             rate += qr**2*R_P2*np.vectorize(WP2.calcwp2)(tau1, tau2, y, target)
     
             R_P2M = eta*c1[2]*c2[0] + eta*(jfac/3.0)*(c1[11] - qr**2*c1[14])*c2[10]
-            rate += qr**2*R_P2M*np.vectorize(WMP2.calcwmp2)(tau1, tau2, y, target)
+            rate += qr**2*R_P2M*np.vectorize(WMP2.calcwmp2)(tau2, tau1, y, target) #Note the order of tau1, tau2
     
             R_D = jfac/3.0*eta*(qr**2*c1[4]*c2[4] + c1[7]*c2[7])
             rate += qr**2*R_D*np.vectorize(WD.calcwd)(tau1, tau2, y, target)
     
             R_S1D = jfac/3.0*eta*(c1[4]*c2[3] - c1[7]*c2[8])
-            rate += qr**2*R_S1D*np.vectorize(WS1D.calcws1d)(tau1, tau2, y, target)
+            rate += qr**2*R_S1D*np.vectorize(WS1D.calcws1d)(tau2, tau1, y, target) #Note the order of tau1, tau2
 
     conv = (rho0/2./np.pi/m_x)*1.69612985e14 # 1 GeV^-4 * cm^-3 * km^-1 * s * c^6 * hbar^2 to keV^-1 kg^-1 day^-1
 
