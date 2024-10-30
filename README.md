@@ -13,7 +13,8 @@ The code currently supports operators $\mathcal{O}_1$ to $\mathcal{O}_{20}$ for 
 For questions, comments or bug reports, please contact Bradley J Kavanagh (bradkav@gmail.com).
 
 **Updates:**
-* 30/10/3022: **Version 1.2** - Extended to include all operators up to $\mathcal{O}_{20}$, with support for spin-1 DM
+* 30/10/2024: **Version 1.2** - Extended to include all operators up to $\mathcal{O}_{20}$, with support for spin-1 DM
+* 30/10/2024: Default branch renamed to `main`
 * 27/04/2022: Fixed some bugs with incorrect nuclear response functions (this should only affect relatively rare parameter combinations for certain elements)
 * 06/04/2022: Added new targets to Nuclei.txt.
 * 29/09/2021: **Version 1.1** - Some operators were missing powers of (q/mN)^2 in the rate calculation, which has now been corrected.  
