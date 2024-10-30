@@ -2,7 +2,7 @@ from setuptools import setup
 
 setup(
     name='WIMpy',
-    version='1.1.1',
+    version='1.2',
     description='Calculates the DM direct detection signal according to the NREFT',
     author='Bradley Kavanagh',
     author_email='kavanagh@ifca.unican.es',
