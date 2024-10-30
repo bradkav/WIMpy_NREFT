@@ -13,6 +13,8 @@ The code currently supports operators <img src="https://rawgit.com/bradkav/WIMpy
 For questions, comments or bug reports, please contact Bradley J Kavanagh (bradkav@gmail.com).
 
 **Updates:**
+* 27/04/2022: Fixed some bugs with incorrect nuclear response functions (this should only affect relatively rare parameter combinations for certain elements)
+* 06/04/2022: Added new targets to Nuclei.txt.
 * 29/09/2021: **Version 1.1** - Some operators were missing powers of (q/mN)^2 in the rate calculation, which has now been corrected.  
 
 ### Installation
@@ -62,3 +64,13 @@ title = {\textnormal{WIMpy\_NREFT v1.1 [Computer Software]}, \href{https://doi.o
 year = {2018}
 }
 ```
+
+### Publications
+
+The code has been used in a number of publications, including:
+- *Dark Matter from Monogem*, C. Cappiello et al., [arXiv:2210.09448](https://arxiv.org/abs/2210.09448)  
+- *Results on photon-mediated dark matter-nucleus interactions from the PICO-60 C3F8 bubble chamber*, Ali et al. (PICO Collaboration, 2022), [arXiv:2204.10340](https://arxiv.org/abs/2204.10340)  
+- *Constraints on dark matter-nucleon effective couplings in the presence of kinematically distinct halo substructures using the DEAP-3600 detector*, Adhikari et al., (DEAP-3600 Collaboration, 2020), [arXiv:2005.14667](https://arxiv.org/abs/2005.14667)  
+- *Digging for dark matter: Spectral analysis and discovery potential of paleo-detectors*, Edwards et al. (2019), [arXiv:1811.10549](https://arxiv.org/abs/1811.10549)  
+- *Dark Matter Model or Mass, but Not Both: Assessing Near-Future Direct Searches with Benchmark-free Forecasting*, Edwards, Kavanagh & Weniger (2018), [arXiv:1805.04117](https://arxiv.org/abs/1805.04117)
+

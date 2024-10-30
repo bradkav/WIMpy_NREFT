@@ -133,5 +133,5 @@ dispatchtable['N14'] = N14
 dispatchtable['Xe131'] = Xe131
 dispatchtable['Ge73'] = Ge73
 dispatchtable['Na23'] = Na23
-dispatchtable['Iodine'] = Iodine
+dispatchtable['I127'] = Iodine
 
