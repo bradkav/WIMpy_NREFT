@@ -4,7 +4,7 @@
 
 `WIMpy_NREFT` (also known as just `WIMpy`) is a python code which allows you to calculate Dark Matter-Nucleus scattering rates in the framework of NREFT (see e.g. [arXiv:1203.3542](https://arxiv.org/abs/1203.3542), [arXiv:1505.03117](https://arxiv.org/abs/1505.03117), [arXiv:1907.02910](https://arxiv.org/abs/1907.02910)).
 
-The code currently supports operators $`\mathcal{O}_1`$ to $`\mathcal{O}_{20}`$ for spin-0, spin-1/2 and spin-1 Dark Matter, as well as millicharged and magnetic dipole Dark Matter. The code can be used to generate spectra for a wide range of targets including light elements such as Hydrogen and Helium, up to heavier targets typically used in direct searches, such as Xenon, Argon, Germanium, Iodine and Fluorine.
+The current version of the code (**v1.2**) supports operators $`\mathcal{O}_1`$ to $`\mathcal{O}_{20}`$ for spin-0, spin-1/2 and spin-1 Dark Matter, as well as millicharged and magnetic dipole Dark Matter. The code can be used to generate spectra for a wide range of targets including light elements such as Hydrogen and Helium, up to heavier targets typically used in direct searches, such as Xenon, Argon, Germanium, Iodine and Fluorine.
 
 `WIMpy_NREFT` now includes functionality to calculate *directional* recoil spectra, as well as signals from coherent neutrino-nucleus scattering (including fluxes from the Sun, atmosphere and diffuse supernovae).
 
