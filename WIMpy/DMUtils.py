@@ -5,7 +5,7 @@
 #
 # Author: Bradley J Kavanagh
 # Email: bradkav@gmail.com
-# Last updated: 22/09/2021
+# Last updated: 30/10/2024
 
 import numpy as np
 from numpy import pi, cos, sin
@@ -288,13 +288,16 @@ def Nevents_standard(E_min, E_max, N_p, N_n, m_x, sig, eff=None,vlag=232.0, sigm
     else:
         integ = lambda x: eff(x)*dRdE_standard(x, N_p, N_n, m_x, sig)
     return quad(integ, E_min, E_max)[0]
- 
+
+def zero_pad(A, size):
+    t = size - len(A)
+    return np.pad(A, pad_width=(0, t), mode='constant') 
  
 #--------------------------------------------------------
 # Differential recoil rate in NREFT framework
 # Calculates the contribution from the interference of operators
 # i and j (with couplings cp and cn to protons and neutrons)
-def dRdE_NREFT(E, m_x, cp, cn, target, vlag=232.0, sigmav=156.0, vesc=544.0):   
+def dRdE_NREFT(E, m_x, cp, cn, target, j_x = 0.5, vlag=232.0, sigmav=156.0, vesc=544.0):   
     A = Avals[target]
     
     eta = calcEta(vmin(E, A, m_x),vlag=vlag, sigmav=sigmav, vesc=vesc)
@@ -310,16 +313,25 @@ def dRdE_NREFT(E, m_x, cp, cn, target, vlag=232.0, sigmav=156.0, vesc=544.0):
     b = np.sqrt(41.467/(45*A**(-1.0/3.0) - 25*A**(-2.0/3.0)))
     y = (q2*b/2)**2
     
-    #Dark matter spin factor (assume spin-1/2)
-    jx = 0.5
-    jfac = jx*(jx+1.0)
+    #Dark matter spin factor
+    jfac = j_x*(j_x+1.0)
     
     rate = E*0.0
     
+    #Check length of cp and cn
+    if (len(cp) != 20):
+        cp = zero_pad(cp)
+        print("Warning - zero padding cp array (to length 20)")
     
-    c_sum = [cp[i] + cn[i] for i in range(15)]
-    c_diff = [cp[i] - cn[i] for i in range(15)]
+    if (len(cn) != 20):
+        cn = zero_pad(cn)
+        print("Warning - zero padding cn array (to length 20)")
+    
+    c_sum = [cp[i] + cn[i] for i in range(20)]
+    c_diff = [cp[i] - cn[i] for i in range(20)]
     c = [c_sum, c_diff]
+    
+    #See e.g. https://arxiv.org/abs/1203.3542, https://arxiv.org/abs/1505.03117, https://arxiv.org/abs/1907.02910
     
     for tau1 in [0,1]:
         for tau2 in [0,1]:
@@ -329,11 +341,21 @@ def dRdE_NREFT(E, m_x, cp, cn, target, vlag=232.0, sigmav=156.0, vesc=544.0):
     
             R_M = c1[0]*c2[0]*eta + jfac/3.0*(qr**2*meta*c1[4]*c2[4] \
                         + meta*c1[7]*c2[7] + qr**2*eta*c1[10]*c2[10])
+                    
+            #Valid for spin-1 DM
+            if (j_x > 0.99):
+                R_M += (1.0/6.0)*qr**2*meta*c1[16]*c2[16] + (1.0/3.0)*qr**4*eta*c1[18]*c2[18]\
+                    + (1.0/3.0)*qr**2*eta*(c1[0]*c2[18] + c1[18]*c2[0])
+            
             rate += R_M*np.vectorize(WM.calcwm)(tau1, tau2, y, target)
     
             R_S2 = eta*c1[9]*c2[9]*0.25*qr**2 + jfac/12.0*(eta*c1[3]*c2[3] + \
                         eta*qr**2*(c1[3]*c2[5] + c1[5]*c2[3]) + eta*qr**4*c1[5]*c2[5] \
                          + meta*c1[11]*c2[11] + meta*qr**2*c1[12]*c2[12])
+                         
+            if (j_x > 0.99):
+                R_S2 += (1.0/12.0)*qr**2*eta*(c1[9]*c2[17] + c1[17]*c2[9] + c1[17]*c2[17])
+                         
             rate += R_S2*np.vectorize(WS2.calcws2)(tau1, tau2, y, target)
     
             R_S1 = (1.0/8.0)*meta*(qr**2*c1[2]*c2[2] + c1[6]*c2[6]) +\
@@ -342,6 +364,10 @@ def dRdE_NREFT(E, m_x, cp, cn, target, vlag=232.0, sigmav=156.0, vesc=544.0):
                             0.5*meta*(c1[11] - qr**2*c1[14])*(c2[11] - qr**2*c2[14]) +\
                             0.5*meta*qr**2*c1[13]*c2[13] \
                         )
+                        
+            if (j_x > 0.99):
+                R_S1 += (1.0/24.0)*qr**2*eta*(c1[17]*c2[17] + qr**2*c1[19]*c2[19])
+            
             rate += R_S1*np.vectorize(WS1.calcws1)(tau1, tau2, y, target)
     
             #--- These response functions are suppressed by an extra power of (q/m_N)^2, see e.g. Eq. (3.23) in https://arxiv.org/abs/1501.03729
@@ -353,9 +379,17 @@ def dRdE_NREFT(E, m_x, cp, cn, target, vlag=232.0, sigmav=156.0, vesc=544.0):
             rate += qr**2*R_P2M*np.vectorize(WMP2.calcwmp2)(tau2, tau1, y, target) #Note the order of tau1, tau2
     
             R_D = jfac/3.0*eta*(qr**2*c1[4]*c2[4] + c1[7]*c2[7])
+            
+            if (j_x > 0.99):
+                R_D += (1.0/6.0)*qr**2*eta*c1[16]*c2[16]
+                
             rate += qr**2*R_D*np.vectorize(WD.calcwd)(tau1, tau2, y, target)
     
             R_S1D = jfac/3.0*eta*(c1[4]*c2[3] - c1[7]*c2[8])
+            
+            if (j_x > 0.99):
+                R_S1D += (1.0/6.0)*qr**2*eta*c1[16]*c2[19]
+            
             rate += qr**2*R_S1D*np.vectorize(WS1D.calcws1d)(tau2, tau1, y, target) #Note the order of tau1, tau2
 
     conv = (rho0/2./np.pi/m_x)*1.69612985e14 # 1 GeV^-4 * cm^-3 * km^-1 * s * c^6 * hbar^2 to keV^-1 kg^-1 day^-1
@@ -395,8 +429,8 @@ def dRdE_anapole(E, m_x, c_A, target, vlag=232.0, sigmav=156.0, vesc=544.0):
     gp = 5.59
     gn = -3.83
     
-    cn = np.zeros(15)
-    cp = np.zeros(15)
+    cn = np.zeros(20)
+    cp = np.zeros(20)
     
 
     
@@ -456,8 +490,8 @@ def dRdE_magnetic(E, m_x, mu_x, target, vlag=232.0, sigmav=156.0, vesc=544.0):
     #muB     = 5.7883818e-5*eV/Tesla # Bohr magneton
     mu_B = 297.45 #GeV^-1 (in natural units (with e = sqrt(4 pi alpha)))
 
-    cp = [E*0.0 for i in range(15)]
-    cn = [E*0.0 for i in range(15)]
+    cp = [E*0.0 for i in range(20)]
+    cn = [E*0.0 for i in range(20)]
     
     #Operator 1
     cp[0] = e*(mu_x*mu_B)/(2.0*m_x)
@@ -544,10 +578,10 @@ def dRdE_millicharge(E, m_x, epsilon, target, vlag=232.0, sigmav=156.0, vesc=544
 # Number of events in NREFT
 # See also dRdE_NREFT for more details
 # Optionally, you can pass a function 'eff' defining the detector efficiency
-def Nevents_NREFT(E_min, E_max, m_x, cp, cn, target, eff = None,vlag=232.0, sigmav=156.0, vesc=544.0):
+def Nevents_NREFT(E_min, E_max, m_x, cp, cn, target, j_x = 0.5, eff = None,vlag=232.0, sigmav=156.0, vesc=544.0):
     if (eff == None):
         eff = lambda x: 1
-    integ = lambda x: eff(x)*dRdE_NREFT(x, m_x, cp, cn, target, vlag, sigmav, vesc)
+    integ = lambda x: eff(x)*dRdE_NREFT(x, m_x, cp, cn, target, j_x, vlag, sigmav, vesc)
     
     return quad(integ, E_min, E_max)[0]
 
@@ -569,7 +603,7 @@ def dRdEdOmega_standard(E, theta, N_p, N_n, m_x, sig, vlag=232.0, sigmav=156.0, 
 # Differential *directional* recoil rate in NREFT framework
 # Calculates the contribution from the interference of operators
 # i and j (with couplings cp and cn to protons and neutrons)
-def dRdEdOmega_NREFT(E, theta, m_x, cp, cn, target, vlag=232.0, sigmav=156.0, vesc=544.0):   
+def dRdEdOmega_NREFT(E, theta, m_x, cp, cn, target, j_x = 0.5, vlag=232.0, sigmav=156.0, vesc=544.0):   
     A = Avals[target]
     
     RT = calcRT(vmin(E, A, m_x),theta, vlag=vlag, sigmav=sigmav, vesc=vesc)/(2*np.pi)
@@ -586,14 +620,21 @@ def dRdEdOmega_NREFT(E, theta, m_x, cp, cn, target, vlag=232.0, sigmav=156.0, ve
     y = (q2*b/2)**2
     
     #Dark matter spin factor
-    jx = 0.5
-    jfac = jx*(jx+1.0)
+    jfac = j_x*(j_x+1.0)
     
     rate = E*0.0
     
+    #Check length of cp and cn
+    if (len(cp) != 20):
+        cp = zero_pad(cp)
+        print("Warning - zero padding cp array (to length 20)")
     
-    c_sum = [cp[i] + cn[i] for i in range(15)]
-    c_diff = [cp[i] - cn[i] for i in range(15)]
+    if (len(cn) != 20):
+        cn = zero_pad(cn)
+        print("Warning - zero padding cn array (to length 20)")
+    
+    c_sum = [cp[i] + cn[i] for i in range(20)]
+    c_diff = [cp[i] - cn[i] for i in range(20)]
     c = [c_sum, c_diff]
     
     for tau1 in [0,1]:
@@ -604,12 +645,22 @@ def dRdEdOmega_NREFT(E, theta, m_x, cp, cn, target, vlag=232.0, sigmav=156.0, ve
     
             R_M = c1[0]*c2[0]*RT + jfac/3.0*(qr**2*MRT*c1[4]*c2[4] \
                         + MRT*c1[7]*c2[7] + qr**2*RT*c1[10]*c2[10])
+                        
+            #Valid for spin-1 DM
+            if (j_x > 0.99):
+                R_M += (1.0/6.0)*qr**2*MRT*c1[16]*c2[16] + (1.0/3.0)*qr**4*RT*c1[18]*c2[18]\
+                    + (1.0/3.0)*qr**2*RT*(c1[0]*c2[18] + c1[18]*c2[0])
+                            
             rate += R_M*np.vectorize(WM.calcwm)(tau1, tau2, y, target)
     
             R_S2 = RT*c1[9]*c2[9]*0.25*qr**2 + jfac/12.0*( \
                         RT*c1[3]*c2[3] + RT*qr**2*(c1[3]*c2[5] + c1[5]*c2[3]) + \
                         RT*qr**4*c1[5]*c2[5] + MRT*c1[11]*c2[11] + MRT*qr**2*c1[12]*c2[12] \
                         )
+                        
+            if (j_x > 0.99):
+                R_S2 += (1.0/12.0)*qr**2*RT*(c1[9]*c2[17] + c1[17]*c2[9] + c1[17]*c2[17])
+                        
             rate += R_S2*np.vectorize(WS2.calcws2)(tau1, tau2, y, target)
     
             R_S1 = (1.0/8.0)*MRT*(qr**2*c1[2]*c2[2] + c1[6]*c2[6]) +\
@@ -618,6 +669,10 @@ def dRdEdOmega_NREFT(E, theta, m_x, cp, cn, target, vlag=232.0, sigmav=156.0, ve
                         0.5*MRT*(c1[11]- qr**2*c1[14])*(c2[11]- qr**2*c2[14]) + \
                         0.5*MRT*qr**2*c1[13]*c2[13] \
                         )
+                        
+            if (j_x > 0.99):
+                R_S1 += (1.0/24.0)*qr**2*RT*(c1[17]*c2[17] + qr**2*c1[19]*c2[19])
+            
             rate += R_S1*np.vectorize(WS1.calcws1)(tau1, tau2, y, target)
             
             #--- The response functions are suppressed by an extra power of (q/m_N)^2, see e.g. Eq. (3.23) in https://arxiv.org/abs/1501.03729
@@ -632,8 +687,14 @@ def dRdEdOmega_NREFT(E, theta, m_x, cp, cn, target, vlag=232.0, sigmav=156.0, ve
             R_D = jfac/3.0*RT*(qr**2*c1[4]*c2[4] + c1[7]*c2[7])
             rate += qr**2*R_D*np.vectorize(WD.calcwd)(tau1, tau2, y, target)
     
+            if (j_x > 0.99):
+                R_D += (1.0/6.0)*qr**2*RT*c1[16]*c2[16]
+    
             R_S1D = jfac/3.0*RT*(c1[4]*c2[3] - c1[7]*c2[8])
             rate += qr**2*R_S1D*np.vectorize(WS1D.calcws1d)(tau1, tau2, y, target)
+
+            if (j_x > 0.99):
+                R_S1D += (1.0/6.0)*qr**2*RT*c1[16]*c2[19]
 
     conv = (rho0/2./np.pi/m_x)*1.69612985e14 # 1 GeV^-4 * cm^-3 * km^-1 * s * c^6 * hbar^2 to keV^-1 kg^-1 day^-1
 
